@@ -202,6 +202,10 @@ export interface TimetableEntry {
     start_time: string;
     end_time: string;
     semester: string;
+    semester_name?: string;
+    department_name?: string;
+    program_name?: string;
+    division?: string;
     is_active: boolean;
 }
 

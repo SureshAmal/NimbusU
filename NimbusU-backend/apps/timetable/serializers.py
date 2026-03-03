@@ -26,6 +26,11 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
     subject_type_display = serializers.CharField(
         source="get_subject_type_display", read_only=True
     )
+    semester_name = serializers.CharField(source="semester.name", read_only=True)
+    department_name = serializers.CharField(
+        source="course_offering.course.department.name", read_only=True, default=None
+    )
+    program_name = serializers.SerializerMethodField()
 
     class Meta:
         model = TimetableEntry
@@ -33,9 +38,16 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
             "id", "course_offering", "course_name", "course_code",
             "faculty_name", "batch", "subject_type", "subject_type_display",
             "location", "day_of_week", "day_name", "start_time", "end_time",
-            "semester", "is_active",
+            "semester", "semester_name", "department_name", "program_name",
+            "is_active",
         ]
         read_only_fields = ["id"]
+
+    def get_program_name(self, obj) -> str | None:
+        department = obj.course_offering.course.department
+        if department and department.programs.exists():
+            return department.programs.first().name
+        return None
 
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):
