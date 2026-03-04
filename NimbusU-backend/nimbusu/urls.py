@@ -67,6 +67,7 @@ urlpatterns = [
     path("api/v1/", include("apps.assignments.urls")),
     path("api/v1/", include("apps.timetable.urls")),
     path("api/v1/", include("apps.communications.urls")),
+    path("api/v1/", include("apps.telemetry.urls")),
 ]
 
 if settings.DEBUG:

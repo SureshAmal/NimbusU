@@ -281,6 +281,13 @@ export const notificationsService = {
     adminStats: () => api.get("/notifications/admin/stats/"),
 };
 
+/* ─── Admin ───────────────────────────────────────────────────────── */
+
+export const adminService = {
+    dashboardStats: () => api.get("/admin/dashboard-stats/"),
+    telemetryStats: () => api.get("/admin/telemetry/"),
+};
+
 /* ─── Audit Logs ──────────────────────────────────────────────────── */
 
 export const auditLogsService = {

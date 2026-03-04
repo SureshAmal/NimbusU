@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.assignments",
     "apps.timetable",
     "apps.communications",
+    "apps.telemetry",
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.telemetry.middleware.TelemetryMiddleware",
 ]
 
 ROOT_URLCONF = "nimbusu.urls"

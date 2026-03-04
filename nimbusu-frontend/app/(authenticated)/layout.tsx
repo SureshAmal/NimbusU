@@ -29,6 +29,8 @@ import {
     BookMarked,
 } from "lucide-react";
 
+import { PageHeaderProvider } from "@/lib/page-header";
+
 function useContextMenuGroups(): ContextMenuGroup[] {
     const { user, logout } = useAuth();
     const { theme, setTheme } = useTheme();
@@ -98,16 +100,18 @@ export default function AuthenticatedLayout({
     const groups = useContextMenuGroups();
 
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset className="overflow-hidden">
-                <AppHeader />
-                <div className="flex-1 overflow-auto">
-                    <SearchableContextMenu groups={groups}>
-                        <main className="p-4 md:p-6">{children}</main>
-                    </SearchableContextMenu>
-                </div>
-            </SidebarInset>
-        </SidebarProvider>
+        <PageHeaderProvider>
+            <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset className="overflow-hidden">
+                    <AppHeader />
+                    <div className="flex-1 overflow-auto">
+                        <SearchableContextMenu groups={groups}>
+                            <main className="p-4 md:p-6">{children}</main>
+                        </SearchableContextMenu>
+                    </div>
+                </SidebarInset>
+            </SidebarProvider>
+        </PageHeaderProvider>
     );
 }

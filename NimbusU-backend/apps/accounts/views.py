@@ -1,6 +1,7 @@
 """Views for the accounts app."""
 
 from django.contrib.auth import get_user_model
+from django.db import models
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import generics, permissions, serializers, status, filters
@@ -232,3 +233,88 @@ class AuditLogListView(generics.ListAPIView):
         if to_date:
             qs = qs.filter(created_at__lte=to_date)
         return qs
+
+
+class AdminDashboardStatsView(APIView):
+    """GET /api/v1/admin/dashboard-stats/ — Aggregated dashboard statistics."""
+
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    @extend_schema(
+        responses={200: inline_serializer("DashboardStatsResponse", {
+            "total_users": serializers.IntegerField(),
+            "active_users": serializers.IntegerField(),
+            "total_departments": serializers.IntegerField(),
+            "total_courses": serializers.IntegerField(),
+            "total_schools": serializers.IntegerField(),
+            "total_offerings": serializers.IntegerField(),
+            "total_enrollments": serializers.IntegerField(),
+            "total_content": serializers.IntegerField(),
+            "users_by_role": serializers.ListField(),
+            "content_by_type": serializers.ListField(),
+            "enrollments_by_department": serializers.ListField(),
+            "recent_activity": serializers.ListField(),
+        })},
+        tags=["Admin"],
+    )
+    def get(self, request):
+        from django.db.models import Count
+        from apps.academics.models import School, Department, Course, CourseOffering, Enrollment
+        from apps.content.models import Content
+
+        # Counts
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        total_departments = Department.objects.count()
+        total_courses = Course.objects.count()
+        total_schools = School.objects.count()
+        total_offerings = CourseOffering.objects.count()
+        total_enrollments = Enrollment.objects.count()
+        total_content = Content.objects.count()
+
+        # Users by role
+        users_by_role = list(
+            User.objects.values("role")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        # Content by type
+        content_by_type = list(
+            Content.objects.values("content_type")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        # Enrollments by department
+        enrollments_by_dept = list(
+            Enrollment.objects
+            .values(department=models.F("course_offering__course__department__name"))
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
+        )
+
+        # Recent activity (last 10 audit log entries)
+        recent = list(
+            AuditLog.objects.select_related("user")
+            .order_by("-created_at")[:10]
+            .values(
+                "user__email", "action", "entity_type",
+                "entity_id", "created_at",
+            )
+        )
+
+        return Response({
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_departments": total_departments,
+            "total_courses": total_courses,
+            "total_schools": total_schools,
+            "total_offerings": total_offerings,
+            "total_enrollments": total_enrollments,
+            "total_content": total_content,
+            "users_by_role": users_by_role,
+            "content_by_type": content_by_type,
+            "enrollments_by_department": enrollments_by_dept,
+            "recent_activity": recent,
+        })

@@ -18,9 +18,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
+import { usePageHeader } from "@/lib/page-header";
 
 export function AppHeader() {
     const { user, logout } = useAuth();
+    const { header } = usePageHeader();
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
@@ -52,8 +54,19 @@ export function AppHeader() {
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
 
-            {/* Breadcrumb / Page title placeholder */}
-            <div className="flex-1" />
+            {/* Page title */}
+            <div className="flex-1 min-w-0">
+                {header && (
+                    <div className="flex items-baseline gap-2">
+                        <h1 className="text-sm font-semibold truncate">{header.title}</h1>
+                        {header.subtitle && (
+                            <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+                                {header.subtitle}
+                            </span>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Settings */}
             <Button

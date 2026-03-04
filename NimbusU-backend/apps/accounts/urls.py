@@ -25,4 +25,6 @@ urlpatterns = [
     path("users/<uuid:pk>/reset-password/", views.UserResetPasswordView.as_view(), name="user-reset-password"),
     # Audit logs
     path("admin/audit-logs/", views.AuditLogListView.as_view(), name="audit-log-list"),
+    # Dashboard stats
+    path("admin/dashboard-stats/", views.AdminDashboardStatsView.as_view(), name="admin-dashboard-stats"),
 ]

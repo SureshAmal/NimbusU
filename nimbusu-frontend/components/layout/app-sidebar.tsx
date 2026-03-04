@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
+    Activity,
     BookOpen,
     Calendar,
     ClipboardList,
@@ -55,6 +56,7 @@ const adminNav = [
     { title: "Announcements", url: "/admin/announcements", icon: Bell },
     { title: "Audit Logs", url: "/admin/audit-logs", icon: ScrollText },
     { title: "Notifications", url: "/admin/notifications", icon: BarChart3 },
+    { title: "Telemetry", url: "/admin/telemetry", icon: Activity },
 ];
 
 const facultyNav = [
