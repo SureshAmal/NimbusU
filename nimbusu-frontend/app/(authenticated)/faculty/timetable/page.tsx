@@ -33,12 +33,13 @@ function generateEventsForEntry(
 ): CalendarEvent[] {
     const events: CalendarEvent[] = [];
     const baseWeekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
-    let targetDayIndex = entry.day_of_week;
-    if (targetDayIndex === 7) targetDayIndex = 0;
+    // date-fns setDay with { weekStartsOn: 1 } maps: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun
+    let targetDayIndex = entry.day_of_week; // Assuming 0=Mon, 1=Tue... 6=Sun in backend
+    const dateFnsDayIndex = targetDayIndex === 6 ? 0 : targetDayIndex + 1;
 
     for (let i = -weeksBefore; i <= weeksAfter; i++) {
         const weekStart = addWeeks(baseWeekStart, i);
-        const eventDate = setDay(weekStart, targetDayIndex + 1, { weekStartsOn: 1 });
+        const eventDate = setDay(weekStart, dateFnsDayIndex, { weekStartsOn: 1 });
         const startTimeStr = entry.start_time.substring(0, 5);
         const endTimeStr = entry.end_time.substring(0, 5);
         const start = parse(startTimeStr, "HH:mm", eventDate);

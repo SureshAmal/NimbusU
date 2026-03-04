@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from .models import AttendanceRecord, Room, TimetableEntry
+from .models import AttendanceRecord, Room, TimetableEntry, TimetableSwapRequest
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -73,3 +73,31 @@ class BulkAttendanceSerializer(serializers.Serializer):
         child=serializers.DictField(child=serializers.CharField()),
         help_text='List of {"student_id": "...", "status": "present|absent|late|excused"}',
     )
+
+
+class TimetableSwapRequestSerializer(serializers.ModelSerializer):
+    """Read serializer with nested display names."""
+
+    requester_name = serializers.CharField(source="requester.full_name", read_only=True)
+    target_faculty_name = serializers.CharField(source="target_faculty.full_name", read_only=True)
+    requester_entry_detail = TimetableEntrySerializer(source="requester_entry", read_only=True)
+    target_entry_detail = TimetableEntrySerializer(source="target_entry", read_only=True)
+
+    class Meta:
+        model = TimetableSwapRequest
+        fields = [
+            "id", "requester", "requester_name",
+            "target_faculty", "target_faculty_name",
+            "requester_entry", "requester_entry_detail",
+            "target_entry", "target_entry_detail",
+            "message", "status", "responded_at", "created_at",
+        ]
+        read_only_fields = ["id", "requester", "target_faculty", "status", "responded_at", "created_at"]
+
+
+class TimetableSwapCreateSerializer(serializers.Serializer):
+    """Write serializer — faculty picks their own entry + target entry."""
+
+    requester_entry = serializers.UUIDField()
+    target_entry = serializers.UUIDField()
+    message = serializers.CharField(required=False, default="", allow_blank=True)

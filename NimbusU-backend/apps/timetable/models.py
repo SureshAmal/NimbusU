@@ -124,3 +124,57 @@ class AttendanceRecord(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.date} - {self.status}"
+
+
+class TimetableSwapRequest(models.Model):
+    """Request from one faculty to swap a timetable slot with another faculty."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_swap_requests",
+        help_text="Faculty who initiated the swap request",
+    )
+    target_faculty = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_swap_requests",
+        help_text="Faculty who must approve the swap",
+    )
+    requester_entry = models.ForeignKey(
+        TimetableEntry,
+        on_delete=models.CASCADE,
+        related_name="swap_requests_as_requester",
+        help_text="Requester's timetable slot to swap",
+    )
+    target_entry = models.ForeignKey(
+        TimetableEntry,
+        on_delete=models.CASCADE,
+        related_name="swap_requests_as_target",
+        help_text="Target faculty's timetable slot to swap",
+    )
+    message = models.TextField(
+        blank=True, default="",
+        help_text="Optional message explaining the swap reason",
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING,
+    )
+    responded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "timetable_swap_requests"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return (
+            f"Swap: {self.requester} ↔ {self.target_faculty} "
+            f"({self.get_status_display()})"
+        )

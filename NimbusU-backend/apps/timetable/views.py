@@ -9,12 +9,14 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsAdmin, IsAdminOrFaculty, IsFaculty
 from apps.academics.models import Enrollment
 
-from .models import AttendanceRecord, Room, TimetableEntry
+from .models import AttendanceRecord, Room, TimetableEntry, TimetableSwapRequest
 from .serializers import (
     AttendanceRecordSerializer,
     BulkAttendanceSerializer,
     RoomSerializer,
     TimetableEntrySerializer,
+    TimetableSwapRequestSerializer,
+    TimetableSwapCreateSerializer,
 )
 
 
@@ -240,3 +242,154 @@ class MyCourseAttendanceView(generics.ListAPIView):
             student=self.request.user,
             timetable_entry__course_offering_id=self.kwargs["offering_id"],
         ).order_by("date")
+
+
+# ─── Timetable Swap ────────────────────────────────────────────────────
+
+
+class SwapRequestListCreateView(APIView):
+    """GET  /api/v1/timetable/swap-requests/ — list my sent + received requests.
+       POST /api/v1/timetable/swap-requests/ — create a new swap request."""
+
+    permission_classes = [permissions.IsAuthenticated, IsFaculty]
+
+    def get(self, request):
+        qs = TimetableSwapRequest.objects.filter(
+            Q(requester=request.user) | Q(target_faculty=request.user)
+        ).select_related(
+            "requester", "target_faculty",
+            "requester_entry__course_offering__course",
+            "requester_entry__course_offering__faculty",
+            "target_entry__course_offering__course",
+            "target_entry__course_offering__faculty",
+        )
+        data = TimetableSwapRequestSerializer(qs, many=True).data
+        return Response(data)
+
+    def post(self, request):
+        ser = TimetableSwapCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            requester_entry = TimetableEntry.objects.select_related(
+                "course_offering__faculty"
+            ).get(id=ser.validated_data["requester_entry"])
+        except TimetableEntry.DoesNotExist:
+            return Response(
+                {"detail": "Requester entry not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            target_entry = TimetableEntry.objects.select_related(
+                "course_offering__faculty"
+            ).get(id=ser.validated_data["target_entry"])
+        except TimetableEntry.DoesNotExist:
+            return Response(
+                {"detail": "Target entry not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Validate: requester must own the requester_entry
+        if requester_entry.course_offering.faculty != request.user:
+            return Response(
+                {"detail": "You can only swap your own timetable entries."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Validate: target_entry must belong to a different faculty
+        target_faculty = target_entry.course_offering.faculty
+        if target_faculty == request.user:
+            return Response(
+                {"detail": "Cannot swap with your own entry."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        swap = TimetableSwapRequest.objects.create(
+            requester=request.user,
+            target_faculty=target_faculty,
+            requester_entry=requester_entry,
+            target_entry=target_entry,
+            message=ser.validated_data.get("message", ""),
+        )
+
+        # Send an in-app notification to the target faculty
+        from apps.communications.models import Notification
+        Notification.objects.create(
+            user=target_faculty,
+            title="Timetable Swap Request",
+            message=(
+                f"{request.user.full_name} wants to swap "
+                f"\"{requester_entry.course_offering.course.name}\" "
+                f"with your \"{target_entry.course_offering.course.name}\"."
+            ),
+            notification_type="timetable",
+            channel="in_app",
+            status="delivered",
+        )
+
+        return Response(
+            TimetableSwapRequestSerializer(swap).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SwapRequestRespondView(APIView):
+    """POST /api/v1/timetable/swap-requests/<id>/respond/
+       Body: {"action": "approve"} or {"action": "reject"}"""
+
+    permission_classes = [permissions.IsAuthenticated, IsFaculty]
+
+    def post(self, request, pk):
+        from django.utils import timezone as tz
+
+        try:
+            swap = TimetableSwapRequest.objects.select_related(
+                "requester_entry__course_offering",
+                "target_entry__course_offering",
+            ).get(id=pk, target_faculty=request.user, status="pending")
+        except TimetableSwapRequest.DoesNotExist:
+            return Response(
+                {"detail": "Swap request not found or already responded."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        action = request.data.get("action")
+        if action not in ("approve", "reject"):
+            return Response(
+                {"detail": "action must be 'approve' or 'reject'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if action == "reject":
+            swap.status = "rejected"
+            swap.responded_at = tz.now()
+            swap.save(update_fields=["status", "responded_at"])
+            return Response({"status": "rejected"})
+
+        # Approve: swap the course_offering between the two entries
+        entry_a = swap.requester_entry
+        entry_b = swap.target_entry
+        entry_a.course_offering, entry_b.course_offering = (
+            entry_b.course_offering,
+            entry_a.course_offering,
+        )
+        entry_a.save(update_fields=["course_offering"])
+        entry_b.save(update_fields=["course_offering"])
+
+        swap.status = "approved"
+        swap.responded_at = tz.now()
+        swap.save(update_fields=["status", "responded_at"])
+
+        # Notify requester
+        from apps.communications.models import Notification
+        Notification.objects.create(
+            user=swap.requester,
+            title="Swap Request Approved",
+            message=f"{request.user.full_name} approved your timetable swap request.",
+            notification_type="timetable",
+            channel="in_app",
+            status="delivered",
+        )
+
+        return Response({"status": "approved"})

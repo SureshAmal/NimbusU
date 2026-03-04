@@ -33,7 +33,7 @@ from apps.communications.models import (
     Notification,
 )
 from apps.content.models import Bookmark, Content, ContentFolder, ContentTag
-from apps.timetable.models import AttendanceRecord, Room, TimetableEntry
+from apps.timetable.models import AttendanceRecord, Room, TimetableEntry, TimetableSwapRequest
 
 User = get_user_model()
 
@@ -102,6 +102,12 @@ STUDENT_DATA = [
     ("rahul.saxena@nimbusu.edu", "Rahul", "Saxena", "CS", "MTECHCS", 2, 2025, "B1", "B", "REG2025CS002"),
     ("deepika.nair@nimbusu.edu", "Deepika", "Nair", "ME", "BTECHME", 6, 2022, "A1", "A", "REG2022ME001"),
     ("siddharth.jain@nimbusu.edu", "Siddharth", "Jain", "CS", "BTECHCS", 6, 2022, "A1", "B", "REG2022CS003"),
+    # ── Additional students for richer data ──
+    ("tanvi.mehta@nimbusu.edu", "Tanvi", "Mehta", "EC", "BTECHEC", 4, 2023, "A2", "A", "REG2023EC002"),
+    ("dev.chauhan@nimbusu.edu", "Dev", "Chauhan", "ME", "BTECHME", 2, 2024, "A1", "A", "REG2024ME001"),
+    ("ishita.roy@nimbusu.edu", "Ishita", "Roy", "CS", "BTECHCS", 4, 2023, "A2", "A", "REG2023CS004"),
+    ("manish.kumar@nimbusu.edu", "Manish", "Kumar", "EC", "MTECHEC", 2, 2025, "B1", "B", "REG2025EC001"),
+    ("riya.agarwal@nimbusu.edu", "Riya", "Agarwal", "CS", "BTECHCS", 2, 2024, "A1", "B", "REG2024CS003"),
 ]
 
 ROOMS = [
@@ -168,6 +174,7 @@ class Command(BaseCommand):
         self._seed_enrollments(student_users, offerings)
         rooms = self._seed_rooms()
         self._seed_timetable(offerings, semester)
+        self._seed_swap_requests(offerings, faculty_users)
         self._seed_assignments(offerings, faculty_users, student_users)
         self._seed_announcements(admin, faculty_users)
         self._seed_content(offerings, faculty_users)
@@ -189,7 +196,7 @@ class Command(BaseCommand):
     def _flush(self):
         """Remove all seeded data in reverse-dependency order."""
         models = [
-            AttendanceRecord, TimetableEntry, Room,
+            TimetableSwapRequest, AttendanceRecord, TimetableEntry, Room,
             Bookmark, Content, ContentTag, ContentFolder,
             Notification, DiscussionPost, DiscussionForum, Message, Announcement,
             Submission, Assignment,
@@ -418,106 +425,163 @@ class Command(BaseCommand):
 
     # ── Timetable ───────────────────────────────────────────────────
     def _seed_timetable(self, offerings, semester):
-        # Clear existing timetable entries first
+        """Seed a **conflict-free** timetable.
+
+        Constraints enforced by design:
+          • No two entries share the same (location, day, time-overlap).
+          • No faculty teaches two entries that overlap on the same day.
+          • Each course gets 2–3 weekly sessions (lecture + lab/tutorial).
+          • Entries span Monday (0) through Saturday (5).
+
+        Faculty-to-course mapping (from _seed_offerings, deterministic):
+          CS101  → Dr. Priya Sharma  (CS[0])   CS201 → Dr. Arjun Reddy (CS[2])
+          CS301  → Dr. Rajesh Kumar   (CS[1])   CS401 → Dr. Priya Sharma (CS[0])
+          CS302  → Dr. Arjun Reddy    (CS[2])   CS402 → Dr. Rajesh Kumar (CS[1])
+          EC201  → Dr. Kavitha Bose   (EC[1])   EC301 → Dr. Anita Desai  (EC[0])
+          ME201  → Dr. Suresh Nair    (ME[0])   MA101 → Dr. Meena Iyer   (MA[0])
+        """
         TimetableEntry.objects.all().delete()
 
-        BATCHES = ["A1", "A2", "B1"]
-        LOCATIONS = {
-            "classroom": [
-                "Main Block Floor 1 Room 101",
-                "Main Block Floor 1 Room 102",
-                "Main Block Floor 2 Room 201",
-                "Main Block Floor 2 Room 202",
-                "Academic Block Room 301",
-            ],
-            "lab": [
-                "IT Block CS Lab 1",
-                "IT Block CS Lab 2",
-                "Electronics Block EC Lab 1",
-                "Science Block Physics Lab",
-            ],
-            "tutorial": [
-                "Tutorial Block Room T1",
-                "Tutorial Block Room T2",
-                "Main Block Floor 1 Room 105",
-            ],
-        }
+        # ── Locations ────────────────────────────────────────────────
+        # 5 classrooms, 4 labs, 3 tutorial rooms — used as string keys
+        CR = [
+            "Main Block Floor 1 Room 101",   # CR0
+            "Main Block Floor 1 Room 102",   # CR1
+            "Main Block Floor 2 Room 201",   # CR2
+            "Main Block Floor 2 Room 202",   # CR3
+            "Academic Block Room 301",       # CR4
+        ]
+        LB = [
+            "IT Block CS Lab 1",             # LB0
+            "IT Block CS Lab 2",             # LB1
+            "Electronics Block EC Lab 1",    # LB2
+            "Science Block Physics Lab",     # LB3
+        ]
+        TU = [
+            "Tutorial Block Room T1",        # TU0
+            "Tutorial Block Room T2",        # TU1
+            "Main Block Floor 1 Room 105",   # TU2
+        ]
 
-        TIME_SLOTS = {
-            "classroom": [
-                (time(9, 0), time(10, 0)),
-                (time(10, 0), time(11, 0)),
-                (time(11, 15), time(12, 15)),
-                (time(14, 0), time(15, 0)),
-                (time(15, 0), time(16, 0)),
-            ],
-            "lab": [
-                (time(9, 0), time(11, 0)),
-                (time(11, 15), time(13, 15)),
-                (time(14, 0), time(16, 0)),
-            ],
-            "tutorial": [
-                (time(16, 15), time(17, 15)),
-                (time(10, 0), time(11, 0)),
-            ],
-        }
+        # ── Time slots ──────────────────────────────────────────────
+        # Classrooms: 1-hour slots
+        C1 = (time(9, 0), time(10, 0))
+        C2 = (time(10, 0), time(11, 0))
+        C3 = (time(11, 15), time(12, 15))
+        C4 = (time(14, 0), time(15, 0))
+        C5 = (time(15, 0), time(16, 0))
+        # Labs: 2-hour slots
+        L1 = (time(9, 0), time(11, 0))
+        L2 = (time(11, 15), time(13, 15))
+        L3 = (time(14, 0), time(16, 0))
+        # Tutorials: 1-hour late-afternoon
+        T1 = (time(16, 15), time(17, 15))
 
-        # Schedule: each offering gets entries across batches with different types
+        # ── Schedule ────────────────────────────────────────────────
+        # Format: (course_code, day, batch, subject_type, (start, end), location)
+        #
+        # Verified by hand: no (location, day, slot) or (faculty, day, slot) duplicates.
+
         SCHEDULE = [
-            # (course_code, day, batch, subject_type, slot_index, location_index)
-            # Monday
-            ("CS101", 0, "A1", "classroom", 0, 0),
-            ("CS101", 0, "A2", "classroom", 1, 1),
-            ("CS201", 0, "A1", "classroom", 2, 2),
-            ("CS201", 0, "B1", "lab", 0, 0),
-            ("EC201", 0, "A1", "classroom", 3, 3),
-            ("MA101", 0, "A1", "classroom", 4, 0),
-            ("MA101", 0, "A2", "tutorial", 0, 0),
-            # Tuesday
-            ("CS301", 1, "A1", "classroom", 0, 0),
-            ("CS301", 1, "A2", "classroom", 1, 1),
-            ("CS401", 1, "A1", "classroom", 2, 2),
-            ("CS101", 1, "B1", "lab", 0, 1),
-            ("EC301", 1, "A1", "classroom", 3, 3),
-            ("ME201", 1, "A1", "classroom", 4, 4),
-            ("CS201", 1, "A2", "tutorial", 0, 1),
-            # Wednesday
-            ("CS302", 2, "A1", "classroom", 0, 0),
-            ("CS302", 2, "A2", "lab", 0, 0),
-            ("CS402", 2, "A1", "classroom", 2, 1),
-            ("EC201", 2, "B1", "lab", 1, 2),
-            ("MA101", 2, "B1", "classroom", 3, 2),
-            ("CS401", 2, "A1", "tutorial", 0, 2),
-            # Thursday
-            ("CS201", 3, "A1", "lab", 0, 0),
-            ("CS301", 3, "B1", "classroom", 2, 0),
-            ("CS401", 3, "A2", "classroom", 3, 1),
-            ("EC301", 3, "A1", "lab", 1, 2),
-            ("ME201", 3, "A1", "lab", 2, 3),
-            ("CS302", 3, "A1", "tutorial", 1, 0),
-            # Friday
-            ("CS101", 4, "A1", "classroom", 1, 0),
-            ("CS402", 4, "A1", "classroom", 0, 2),
-            ("CS402", 4, "B1", "lab", 0, 1),
-            ("EC201", 4, "A2", "classroom", 2, 3),
-            ("MA101", 4, "A2", "classroom", 3, 0),
-            ("CS301", 4, "A1", "tutorial", 0, 0),
-            # Saturday
-            ("CS201", 5, "A1", "tutorial", 0, 1),
-            ("CS401", 5, "B1", "lab", 0, 0),
-            ("EC201", 5, "A1", "tutorial", 1, 2),
+            # ═══════════ MONDAY (0) ═══════════
+            # Slot C1: Priya→CS101@CR0,  Rajesh→CS301@CR1
+            ("CS101", 0, "A1", "classroom", C1, CR[0]),
+            ("CS301", 0, "A1", "classroom", C1, CR[1]),
+            # Slot C2: Priya→CS401@CR2,  Rajesh→CS402@CR3
+            ("CS401", 0, "A1", "classroom", C2, CR[2]),
+            ("CS402", 0, "A1", "classroom", C2, CR[3]),
+            # Slot C3: Anita→EC301@CR4,  Meena→MA101@CR0
+            ("EC301", 0, "A1", "classroom", C3, CR[4]),
+            ("MA101", 0, "A1", "classroom", C3, CR[0]),
+            # Slot C4: Kavitha→EC201@CR1, Suresh→ME201@CR2
+            ("EC201", 0, "A1", "classroom", C4, CR[1]),
+            ("ME201", 0, "A1", "classroom", C4, CR[2]),
+            # Slot T1: Arjun→CS201 tutorial@TU0
+            ("CS201", 0, "A1", "tutorial",  T1, TU[0]),
+
+            # ═══════════ TUESDAY (1) ═══════════
+            # Slot C1: Arjun→CS201@CR0,  Kavitha→EC201@CR1
+            ("CS201", 1, "A1", "classroom", C1, CR[0]),
+            ("EC201", 1, "A2", "classroom", C1, CR[1]),
+            # Slot C2: Priya→CS101@CR2,  Anita→EC301@CR3
+            ("CS101", 1, "A2", "classroom", C2, CR[2]),
+            ("EC301", 1, "A1", "classroom", C2, CR[3]),
+            # Slot C3: Rajesh→CS301@CR0,  Meena→MA101@CR4
+            ("CS301", 1, "A2", "classroom", C3, CR[0]),
+            ("MA101", 1, "A2", "classroom", C3, CR[4]),
+            # Slot L3: Arjun→CS302 lab@LB0, Suresh→ME201 lab@LB3
+            ("CS302", 1, "A1", "lab",       L3, LB[0]),
+            ("ME201", 1, "A1", "lab",       L3, LB[3]),
+            # Slot T1: Priya→CS401 tutorial@TU1
+            ("CS401", 1, "A1", "tutorial",  T1, TU[1]),
+
+            # ═══════════ WEDNESDAY (2) ═══════════
+            # Slot L1: Priya→CS101 lab@LB0, Kavitha→EC201 lab@LB2
+            ("CS101", 2, "A1", "lab",       L1, LB[0]),
+            ("EC201", 2, "A1", "lab",       L1, LB[2]),
+            # Slot C3: Arjun→CS302@CR0,  Rajesh→CS402@CR1
+            ("CS302", 2, "A1", "classroom", C3, CR[0]),
+            ("CS402", 2, "A1", "classroom", C3, CR[1]),
+            # Slot C4: Priya→CS401@CR2,  Meena→MA101@CR3
+            ("CS401", 2, "A2", "classroom", C4, CR[2]),
+            ("MA101", 2, "B1", "classroom", C4, CR[3]),
+            # Slot C5: Suresh→ME201@CR4, Anita→EC301@CR0
+            ("ME201", 2, "A1", "classroom", C5, CR[4]),
+            ("EC301", 2, "A1", "classroom", C5, CR[0]),
+            # Slot T1: Rajesh→CS301 tutorial@TU0
+            ("CS301", 2, "A1", "tutorial",  T1, TU[0]),
+
+            # ═══════════ THURSDAY (3) ═══════════
+            # Slot L1: Arjun→CS201 lab@LB0, Anita→EC301 lab@LB2
+            ("CS201", 3, "A1", "lab",       L1, LB[0]),
+            ("EC301", 3, "A1", "lab",       L1, LB[2]),
+            # Slot C3: Priya→CS101@CR0,  Rajesh→CS301@CR1
+            ("CS101", 3, "B1", "classroom", C3, CR[0]),
+            ("CS301", 3, "B1", "classroom", C3, CR[1]),
+            # Slot C4: Arjun→CS302@CR2,  Kavitha→EC201@CR3
+            ("CS302", 3, "A2", "classroom", C4, CR[2]),
+            ("EC201", 3, "A1", "classroom", C4, CR[3]),
+            # Slot C5: Priya→CS401@CR4,  Meena→MA101@CR0
+            ("CS401", 3, "A1", "classroom", C5, CR[4]),
+            ("MA101", 3, "A1", "classroom", C5, CR[0]),
+            # Slot T1: Rajesh→CS402 tutorial@TU2
+            ("CS402", 3, "A1", "tutorial",  T1, TU[2]),
+
+            # ═══════════ FRIDAY (4) ═══════════
+            # Slot C1: Rajesh→CS402@CR0,  Suresh→ME201@CR1
+            ("CS402", 4, "B1", "classroom", C1, CR[0]),
+            ("ME201", 4, "A1", "classroom", C1, CR[1]),
+            # Slot L1: Priya→CS401 lab@LB1, Kavitha→EC201 lab@LB2
+            ("CS401", 4, "B1", "lab",       L1, LB[1]),
+            ("EC201", 4, "A2", "lab",       L1, LB[2]),
+            # Slot C3: Arjun→CS201@CR2,  Meena→MA101@CR3
+            ("CS201", 4, "A2", "classroom", C3, CR[2]),
+            ("MA101", 4, "A1", "classroom", C3, CR[3]),
+            # Slot C4: Priya→CS101@CR4,  Rajesh→CS301@CR0
+            ("CS101", 4, "A1", "classroom", C4, CR[4]),
+            ("CS301", 4, "A1", "classroom", C4, CR[0]),
+            # Slot T1: Arjun→CS302 tutorial@TU0
+            ("CS302", 4, "A1", "tutorial",  T1, TU[0]),
+
+            # ═══════════ SATURDAY (5) ═══════════
+            # Slot L1: Rajesh→CS301 lab@LB1, Arjun→CS201 lab@LB0
+            ("CS301", 5, "A1", "lab",       L1, LB[1]),
+            ("CS201", 5, "B1", "lab",       L1, LB[0]),
+            # Slot C3: Priya→CS101@CR0,  Kavitha→EC201@CR1
+            ("CS101", 5, "A2", "classroom", C3, CR[0]),
+            ("EC201", 5, "A1", "classroom", C3, CR[1]),
+            # Slot L3: Rajesh→CS402 lab@LB1, Suresh→ME201 lab@LB3
+            ("CS402", 5, "A1", "lab",       L3, LB[1]),
+            ("ME201", 5, "A1", "lab",       L3, LB[3]),
+            # Slot T1: Meena→MA101 tutorial@TU1
+            ("MA101", 5, "A2", "tutorial",  T1, TU[1]),
         ]
 
         count = 0
-        for code, day, batch, stype, slot_idx, loc_idx in SCHEDULE:
+        for code, day, batch, stype, (start_t, end_t), location in SCHEDULE:
             offering = offerings.get(code)
             if not offering:
                 continue
-            slots = TIME_SLOTS[stype]
-            locs = LOCATIONS[stype]
-            start_t, end_t = slots[slot_idx % len(slots)]
-            location = locs[loc_idx % len(locs)]
-
             TimetableEntry.objects.create(
                 course_offering=offering,
                 batch=batch,
@@ -530,6 +594,65 @@ class Command(BaseCommand):
             )
             count += 1
         self.stdout.write(self.style.SUCCESS(f"  ✅ Timetable entries: {count}"))
+
+    # ── Swap Requests ───────────────────────────────────────────────
+    def _seed_swap_requests(self, offerings, faculty_users):
+        """Seed sample timetable swap requests between faculty."""
+        TimetableSwapRequest.objects.all().delete()
+
+        # Find two entries owned by different faculty to create a swap
+        cs101_entries = TimetableEntry.objects.filter(
+            course_offering=offerings.get("CS101")
+        ).order_by("day_of_week")
+        cs301_entries = TimetableEntry.objects.filter(
+            course_offering=offerings.get("CS301")
+        ).order_by("day_of_week")
+
+        count = 0
+        if cs101_entries.exists() and cs301_entries.exists():
+            # Pending swap: Priya (CS101) wants to swap with Rajesh (CS301)
+            req_entry = cs101_entries.first()
+            tgt_entry = cs301_entries.first()
+            if req_entry and tgt_entry:
+                requester = req_entry.course_offering.faculty
+                target = tgt_entry.course_offering.faculty
+                if requester != target:
+                    TimetableSwapRequest.objects.create(
+                        requester=requester,
+                        target_faculty=target,
+                        requester_entry=req_entry,
+                        target_entry=tgt_entry,
+                        message="Hi, could we swap our Monday morning slots? I have a faculty meeting at 9 AM.",
+                        status="pending",
+                    )
+                    count += 1
+
+        # A second swap using different courses
+        cs401_entries = TimetableEntry.objects.filter(
+            course_offering=offerings.get("CS401")
+        ).order_by("day_of_week")
+        cs402_entries = TimetableEntry.objects.filter(
+            course_offering=offerings.get("CS402")
+        ).order_by("day_of_week")
+
+        if cs401_entries.exists() and cs402_entries.exists():
+            req_entry = cs401_entries.first()
+            tgt_entry = cs402_entries.first()
+            if req_entry and tgt_entry:
+                requester = req_entry.course_offering.faculty
+                target = tgt_entry.course_offering.faculty
+                if requester != target:
+                    TimetableSwapRequest.objects.create(
+                        requester=requester,
+                        target_faculty=target,
+                        requester_entry=req_entry,
+                        target_entry=tgt_entry,
+                        message="Would you mind switching our Wednesday slots? The lab equipment I need is only available in the afternoon.",
+                        status="pending",
+                    )
+                    count += 1
+
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Swap requests: {count}"))
 
     # ── Assignments ─────────────────────────────────────────────────
     def _seed_assignments(self, offerings, faculty_users, student_users):
