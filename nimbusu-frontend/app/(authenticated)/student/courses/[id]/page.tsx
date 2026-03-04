@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { assignmentsService, contentService, attendanceService } from "@/services/api";
+import { usePageHeader } from "@/lib/page-header";
 import type { CourseOffering, Assignment, Content, Submission } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ export default function StudentCourseDetailPage() {
     const [content, setContent] = useState<Content[]>([]);
     const [attendance, setAttendance] = useState<unknown[]>([]);
     const [loading, setLoading] = useState(true);
+    const { setHeader } = usePageHeader();
 
     const [submitDialog, setSubmitDialog] = useState(false);
     const [submitAssignment, setSubmitAssignment] = useState<Assignment | null>(null);
@@ -83,6 +85,19 @@ export default function StudentCourseDetailPage() {
         }
         fetch();
     }, [id]);
+
+    useEffect(() => {
+        if (offering) {
+            setHeader({
+                title: offering.course_name,
+                subtitle: `${offering.course_code} · Section ${offering.section} · ${offering.semester_name}`,
+                backUrl: "/student/courses"
+            });
+        } else {
+            setHeader({ title: "Course Details", backUrl: "/student/courses" });
+        }
+        return () => setHeader(null);
+    }, [offering, setHeader]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -159,18 +174,6 @@ export default function StudentCourseDetailPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header — flat, no card */}
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">{offering?.course_name}</h1>
-                <div className="flex items-center gap-2 mt-1.5 text-sm text-muted-foreground">
-                    <span className="font-mono">{offering?.course_code}</span>
-                    <span>·</span>
-                    <span>{offering?.faculty_name}</span>
-                    <span>·</span>
-                    <span>{offering?.semester_name}</span>
-                </div>
-            </div>
-
             <Tabs defaultValue="content">
                 <TabsList>
                     <TabsTrigger value="content"><FileText className="h-4 w-4 mr-1.5" /> Content</TabsTrigger>

@@ -24,6 +24,7 @@ export interface User {
 export interface StudentProfile {
     id: string;
     student_id_number: string;
+    roll_no?: string | null;
     register_no?: string | null;
     program: string;
     current_semester: number;

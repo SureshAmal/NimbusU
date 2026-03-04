@@ -9,7 +9,15 @@ import {
     ModernEventCalendar,
     CalendarEvent,
 } from "@/components/application/modern-calendar";
-import { parse, setDay, startOfWeek, addWeeks } from "date-fns";
+import { format, parse, setDay, startOfWeek, addWeeks } from "date-fns";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/components/ui/sheet";
+import { MapPin, Users, Tag, Clock } from "lucide-react";
 
 const SUBJECT_COLORS: Record<string, string> = {
     classroom: "bg-cyan-500/10 border-cyan-500/20 text-cyan-700 dark:text-cyan-400",
@@ -54,12 +62,15 @@ export default function FacultyTimetablePage() {
     const [entries, setEntries] = useState<TimetableEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [sheetOpen, setSheetOpen] = useState(false);
 
     useEffect(() => {
         async function fetch() {
             try {
                 const { data } = await timetableService.mine();
-                setEntries(Array.isArray(data) ? data : []);
+                // @ts-ignore - Handle both array and paginated responses
+                setEntries(Array.isArray(data) ? data : (data.results ?? []));
             } catch { toast.error("Failed to load timetable"); }
             finally { setLoading(false); }
         }
@@ -102,8 +113,58 @@ export default function FacultyTimetablePage() {
                     events={calendarEvents}
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
+                    onEventClick={(event) => {
+                        setSelectedEvent(event);
+                        setSheetOpen(true);
+                    }}
                 />
             </div>
+
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                        <SheetTitle className="text-xl">{selectedEvent?.title}</SheetTitle>
+                        <SheetDescription className="flex items-center gap-2 mt-1">
+                            {selectedEvent?.start && selectedEvent?.end && (
+                                <>
+                                    <Clock className="h-4 w-4" />
+                                    <span>
+                                        {format(selectedEvent.start, "hh:mm a")} - {format(selectedEvent.end, "hh:mm a")}
+                                    </span>
+                                </>
+                            )}
+                        </SheetDescription>
+                    </SheetHeader>
+
+                    {!!selectedEvent?.extendedProps?.entry && (
+                        <div className="mt-6 space-y-6">
+                            <div className="grid gap-4">
+                                <div className="flex items-start gap-3">
+                                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium">Location</p>
+                                        <p className="text-sm text-muted-foreground">{(selectedEvent.extendedProps.entry as TimetableEntry).location}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium">Batch</p>
+                                        <p className="text-sm text-muted-foreground">{(selectedEvent.extendedProps.entry as TimetableEntry).batch}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <Tag className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium">Type</p>
+                                        <p className="text-sm text-muted-foreground uppercase">{String((selectedEvent.extendedProps.entry as TimetableEntry).subject_type)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }

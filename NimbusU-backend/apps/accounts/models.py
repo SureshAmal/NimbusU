@@ -86,6 +86,7 @@ class StudentProfile(models.Model):
         User, on_delete=models.CASCADE, related_name="student_profile"
     )
     student_id_number = models.CharField(max_length=50, unique=True)
+    roll_no = models.CharField(max_length=50, unique=True, null=True, blank=True)
     register_no = models.CharField(max_length=50, unique=True, null=True, blank=True)
     program = models.ForeignKey(
         "academics.Program",

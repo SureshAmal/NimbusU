@@ -13,13 +13,14 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile
         fields = [
-            "id", "student_id_number", "register_no", "program",
+            "id", "student_id_number", "roll_no", "register_no", "program",
             "current_semester", "admission_date", "batch_year",
             "batch", "division",
         ]
         read_only_fields = ["id"]
         extra_kwargs = {
             "student_id_number": {"validators": []},
+            "roll_no": {"validators": []},
             "register_no": {"validators": []},
         }
 

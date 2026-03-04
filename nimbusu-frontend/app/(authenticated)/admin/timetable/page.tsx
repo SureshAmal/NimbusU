@@ -120,6 +120,14 @@ function generateEventsForEntry(
   return events;
 }
 
+interface ConflictData {
+  type: string;
+  location?: string;
+  faculty?: string;
+  entry_a: TimetableEntry;
+  entry_b: TimetableEntry;
+}
+
 export default function AdminTimetablePage() {
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
   const [offerings, setOfferings] = useState<CourseOffering[]>([]);
@@ -142,7 +150,7 @@ export default function AdminTimetablePage() {
 
   // Conflicts
   const [conflictsDialogOpen, setConflictsDialogOpen] = useState(false);
-  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [conflicts, setConflicts] = useState<ConflictData[]>([]);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
 
   // Students popup
@@ -251,12 +259,12 @@ export default function AdminTimetablePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await timetableService.create(form as any);
+      await timetableService.create(form as unknown as Parameters<typeof timetableService.create>[0]);
       toast.success("Timetable entry created");
       setCreateDialogOpen(false);
       fetchAll();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to create entry");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to create entry");
     } finally {
       setSaving(false);
     }
@@ -268,13 +276,13 @@ export default function AdminTimetablePage() {
     if (!selectedEntry) return;
     setSaving(true);
     try {
-      await timetableService.update(selectedEntry.id, form as any);
+      await timetableService.update(selectedEntry.id, form as unknown as Parameters<typeof timetableService.update>[1]);
       toast.success("Timetable entry updated");
       setSheetEditing(false);
       setSheetOpen(false);
       fetchAll();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to update entry");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update entry");
     } finally {
       setSaving(false);
     }
@@ -418,7 +426,7 @@ export default function AdminTimetablePage() {
         <Label>Subject Type *</Label>
         <Select
           value={form.subject_type}
-          onValueChange={(v: any) => setForm({ ...form, subject_type: v })}
+          onValueChange={(v: "classroom" | "lab" | "tutorial") => setForm({ ...form, subject_type: v })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -958,7 +966,7 @@ export default function AdminTimetablePage() {
                 <div className="text-xs text-muted-foreground font-medium mb-3">
                   {studentsList.length} student{studentsList.length !== 1 ? "s" : ""}
                 </div>
-                {studentsList.map((student: any) => (
+                {studentsList.map((student) => (
                   <div
                     key={student.id}
                     className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"

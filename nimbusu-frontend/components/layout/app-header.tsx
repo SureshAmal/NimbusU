@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { Bell, Search, Settings } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Bell, Search, Settings, ArrowLeft } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,32 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { usePageHeader } from "@/lib/page-header";
 
+/** Derive a human-readable title from a URL path, e.g. "/admin/audit-logs" → "Audit Logs" */
+function titleFromPath(pathname: string): string {
+    const segments = pathname.split("/").filter(Boolean);
+    if (!segments.length) return "Home";
+
+    // Check if the last segment looks like an ID (UUID or purely numeric)
+    const isId = (str: string) => /^[0-9a-fA-F-]{36}$/.test(str) || /^\d+$/.test(str);
+
+    let last = segments[segments.length - 1] ?? "";
+    if (isId(last) && segments.length > 1) {
+        const prev = segments[segments.length - 2] ?? "";
+        // Convert 'courses' -> 'Course Details', etc.
+        last = prev.endsWith("s") ? prev.slice(0, -1) + " Details" : prev + " Details";
+    }
+
+    // Convert kebab-case to Title Case
+    return last
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ") || "Home";
+}
+
 export function AppHeader() {
     const { user, logout } = useAuth();
     const { header } = usePageHeader();
+    const pathname = usePathname();
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
@@ -38,6 +62,10 @@ export function AppHeader() {
         const interval = setInterval(fetchUnread, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    // Use explicit header if set, otherwise derive from path
+    const displayTitle = header?.title ?? titleFromPath(pathname);
+    const displaySubtitle = header?.subtitle ?? undefined;
 
     const initials = user
         ? `${user.first_name[0] ?? ""}${user.last_name[0] ?? ""}`.toUpperCase()
@@ -55,17 +83,22 @@ export function AppHeader() {
             <Separator orientation="vertical" className="mr-2 h-4" />
 
             {/* Page title */}
+            {header?.backUrl && (
+                <Link href={header.backUrl} className="mr-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                </Link>
+            )}
             <div className="flex-1 min-w-0">
-                {header && (
-                    <div className="flex items-baseline gap-2">
-                        <h1 className="text-sm font-semibold truncate">{header.title}</h1>
-                        {header.subtitle && (
-                            <span className="text-xs text-muted-foreground truncate hidden sm:inline">
-                                {header.subtitle}
-                            </span>
-                        )}
-                    </div>
-                )}
+                <div className="flex items-baseline gap-2">
+                    <h1 className="text-sm font-semibold truncate">{displayTitle}</h1>
+                    {displaySubtitle && (
+                        <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+                            {displaySubtitle}
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Settings */}

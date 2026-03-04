@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 let content = fs.readFileSync('app/(authenticated)/admin/academics/page.tsx', 'utf8');
 

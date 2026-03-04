@@ -127,15 +127,21 @@ interface ActivityItemProps {
 }
 
 function ActivityItem({ email, action, entityType, time, index }: ActivityItemProps) {
-  const timeAgo = useMemo(() => {
+  const [timeAgo, setTimeAgo] = useState("");
+
+  useEffect(() => {
     const diff = Date.now() - new Date(time).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    if (mins < 1) setTimeAgo("just now");
+    else if (mins < 60) setTimeAgo(`${mins}m ago`);
+    else {
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) setTimeAgo(`${hrs}h ago`);
+      else {
+        const days = Math.floor(hrs / 24);
+        setTimeAgo(`${days}d ago`);
+      }
+    }
   }, [time]);
 
   return (

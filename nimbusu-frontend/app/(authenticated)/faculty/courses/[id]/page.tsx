@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { assignmentsService, attendanceService, contentService, timetableService } from "@/services/api";
+import { usePageHeader } from "@/lib/page-header";
 import type { CourseOffering, Assignment, Content, User, Submission, TimetableEntry, AttendanceRecord } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export default function FacultyCourseDetailPage() {
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [content, setContent] = useState<Content[]>([]);
     const [loading, setLoading] = useState(true);
+    const { setHeader } = usePageHeader();
 
     /* Assignment creation */
     const [assignDialog, setAssignDialog] = useState(false);
@@ -86,17 +88,31 @@ export default function FacultyCourseDetailPage() {
                     timetableService.mine(),
                 ]);
                 setOffering(offRes.data);
-                const studData = studRes.data;
+                const studData = studRes.data as User[] | { results?: User[], data?: User[] };
                 setStudents(Array.isArray(studData) ? studData : (studData.results ?? studData.data ?? []));
                 setAssignments(assRes.data.results ?? []);
                 setContent(contRes.data.results ?? []);
-                const allEntries = Array.isArray(ttRes.data) ? ttRes.data : (ttRes.data.results ?? []);
+                const ttData = ttRes.data as TimetableEntry[] | { results?: TimetableEntry[] };
+                const allEntries = Array.isArray(ttData) ? ttData : (ttData.results ?? []);
                 setTimetableEntries(allEntries.filter((e: TimetableEntry) => e.course_offering === id));
             } catch { toast.error("Failed to load course data"); }
             finally { setLoading(false); }
         }
         fetch();
     }, [id]);
+
+    useEffect(() => {
+        if (offering) {
+            setHeader({
+                title: offering.course_name,
+                subtitle: `${offering.course_code} · Section ${offering.section} · ${offering.semester_name}`,
+                backUrl: "/faculty/courses"
+            });
+        } else {
+            setHeader({ title: "Course Details", backUrl: "/faculty/courses" });
+        }
+        return () => setHeader(null);
+    }, [offering, setHeader]);
 
     const fetchAttendanceReport = useCallback(async () => {
         setLoadingAttendance(true);
@@ -158,7 +174,15 @@ export default function FacultyCourseDetailPage() {
 
     async function handleMarkAttendance() {
         if (!selectedEntry || !attendanceDate) { toast.error("Select a class and date"); return; }
-        const records = students.map((s) => ({ student_id: s.id, status: attendanceRecords[s.id] || "present" }));
+        const activeEntry = timetableEntries.find(e => e.id === selectedEntry);
+        const targetStudents = activeEntry && activeEntry.batch ? students.filter(s => s.student_profile?.batch === activeEntry.batch) : students;
+
+        if (targetStudents.length === 0) {
+            toast.error("No students found in this batch.");
+            return;
+        }
+
+        const records = targetStudents.map((s) => ({ student_id: s.id, status: attendanceRecords[s.id] || "present" }));
         setMarkingAttendance(true);
         try { await attendanceService.markBulk({ timetable_entry_id: selectedEntry, date: attendanceDate, records }); toast.success("Attendance saved!"); setAttendanceRecords({}); fetchAttendanceReport(); }
         catch { toast.error("Failed to mark"); }
@@ -169,19 +193,8 @@ export default function FacultyCourseDetailPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header — flat */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{offering?.course_name}</h1>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        <span className="font-mono">{offering?.course_code}</span>
-                        <span>·</span>
-                        <span>Section {offering?.section}</span>
-                        <span>·</span>
-                        <span>{offering?.semester_name}</span>
-                    </div>
-                </div>
-                {/* Quick stats */}
+            {/* Quick stats */}
+            <div className="flex justify-end mb-2">
                 <div className="hidden sm:flex items-center gap-6 text-center">
                     <div><div className="text-xl font-bold">{students.length}</div><p className="text-xs text-muted-foreground">Students</p></div>
                     <div><div className="text-xl font-bold">{assignments.length}</div><p className="text-xs text-muted-foreground">Assignments</p></div>
@@ -232,10 +245,16 @@ export default function FacultyCourseDetailPage() {
                                         {s.first_name?.[0]}{s.last_name?.[0]}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
+                                            {s.student_profile?.roll_no && <Badge variant="outline" className="text-[10px] h-4 px-1">{s.student_profile.roll_no}</Badge>}
+                                        </div>
                                         <p className="text-xs text-muted-foreground truncate">{s.email}</p>
                                     </div>
-                                    <span className="text-xs text-muted-foreground">{s.department_name ?? ""}</span>
+                                    <div className="text-right flex flex-col items-end gap-1">
+                                        <span className="text-xs text-muted-foreground">{s.student_profile?.program ?? s.department_name ?? ""} {s.student_profile?.current_semester ? `· Sem ${s.student_profile.current_semester}` : ""}</span>
+                                        {s.student_profile?.batch && <Badge variant="secondary" className="text-[10px] h-4 px-1">{s.student_profile.batch}</Badge>}
+                                    </div>
                                 </div>
                             ))}
                             <p className="text-xs text-muted-foreground pt-2 pl-1">{students.length} student{students.length !== 1 ? "s" : ""}</p>
@@ -326,27 +345,40 @@ export default function FacultyCourseDetailPage() {
                                 <Input type="date" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} className="h-8 text-sm w-36" />
                             </div>
                         </div>
-                        {selectedEntry && students.length > 0 && (
-                            <>
-                                <div className="space-y-0.5">
-                                    {students.map((s) => (
-                                        <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/30" style={{ borderRadius: "var(--radius)" }}>
-                                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs" style={{ borderRadius: "9999px" }}>
-                                                {s.first_name?.[0]}{s.last_name?.[0]}
+                        {selectedEntry && students.length > 0 && (() => {
+                            const activeEntry = timetableEntries.find(e => e.id === selectedEntry);
+                            const filteredStudents = activeEntry && activeEntry.batch
+                                ? students.filter(s => s.student_profile?.batch === activeEntry.batch)
+                                : students;
+
+                            return (
+                                <>
+                                    <div className="space-y-0.5">
+                                        {filteredStudents.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground py-4 text-center border rounded-lg border-dashed">No students found matching this class batch ({activeEntry?.batch}).</p>
+                                        ) : filteredStudents.map((s) => (
+                                            <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/30" style={{ borderRadius: "var(--radius)" }}>
+                                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs shrink-0" style={{ borderRadius: "9999px" }}>
+                                                    {s.first_name?.[0]}{s.last_name?.[0]}
+                                                </div>
+                                                <div className="flex-1 min-w-0 flex items-center gap-2">
+                                                    <span className="text-sm font-medium truncate">{s.first_name} {s.last_name}</span>
+                                                    {s.student_profile?.roll_no && <Badge variant="outline" className="text-[10px] h-4 px-1 hidden sm:inline-flex">{s.student_profile.roll_no}</Badge>}
+                                                    {s.student_profile?.batch && <Badge variant="secondary" className="text-[10px] h-4 px-1 hidden sm:inline-flex">{s.student_profile.batch}</Badge>}
+                                                </div>
+                                                <Select value={attendanceRecords[s.id] || "present"} onValueChange={(v) => setAttendanceRecords((r) => ({ ...r, [s.id]: v }))}>
+                                                    <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>{STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                </Select>
                                             </div>
-                                            <span className="text-sm flex-1">{s.first_name} {s.last_name}</span>
-                                            <Select value={attendanceRecords[s.id] || "present"} onValueChange={(v) => setAttendanceRecords((r) => ({ ...r, [s.id]: v }))}>
-                                                <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
-                                                <SelectContent>{STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                            </Select>
-                                        </div>
-                                    ))}
-                                </div>
-                                <Button size="sm" onClick={handleMarkAttendance} disabled={markingAttendance} style={{ borderRadius: "var(--radius)" }}>
-                                    {markingAttendance ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />} Save
-                                </Button>
-                            </>
-                        )}
+                                        ))}
+                                    </div>
+                                    <Button className="mt-4" size="sm" onClick={handleMarkAttendance} disabled={markingAttendance || filteredStudents.length === 0} style={{ borderRadius: "var(--radius)" }}>
+                                        {markingAttendance ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />} Save
+                                    </Button>
+                                </>
+                            );
+                        })()}
                     </div>
 
                     {/* Attendance report */}

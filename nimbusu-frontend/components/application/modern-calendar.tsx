@@ -301,34 +301,34 @@ export function ModernEventCalendar({
 
         return (
             <div className="flex flex-col h-full bg-background rounded-[var(--radius)] border border-border overflow-hidden shadow-sm min-w-[640px]">
-                <div className="flex border-b border-border bg-muted/40 sticky top-0 z-30">
-                    <div className="w-16 shrink-0 border-r border-border" />
-                    {days.map((day) => (
-                        <div
-                            key={day.toISOString()}
-                            className="flex-1 py-3 text-center border-r border-border last:border-r-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => onDateClick?.(day)}
-                        >
-                            <div className="flex flex-col items-center gap-1">
-                                <span
-                                    className={cn(
-                                        "text-xs font-semibold uppercase tracking-wider",
-                                        isToday(day) ? "text-primary" : "text-muted-foreground",
-                                    )}
-                                >
-                                    {format(day, "EEE")}
-                                </span>
-                                <span className={cn(
-                                    "text-lg font-medium w-8 h-8 flex items-center justify-center rounded-full transition-all",
-                                    isToday(day) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground"
-                                )}>
-                                    {format(day, "d")}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar scroll-smooth">
+                    <div className="flex border-b border-border bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur sticky top-0 z-30">
+                        <div className="w-16 shrink-0 border-r border-border" />
+                        {days.map((day) => (
+                            <div
+                                key={day.toISOString()}
+                                className="flex-1 py-3 text-center border-r border-border last:border-r-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                                onClick={() => onDateClick?.(day)}
+                            >
+                                <div className="flex flex-col items-center gap-1">
+                                    <span
+                                        className={cn(
+                                            "text-xs font-semibold uppercase tracking-wider",
+                                            isToday(day) ? "text-primary" : "text-muted-foreground",
+                                        )}
+                                    >
+                                        {format(day, "EEE")}
+                                    </span>
+                                    <span className={cn(
+                                        "text-lg font-medium w-8 h-8 flex items-center justify-center rounded-full transition-all",
+                                        isToday(day) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground"
+                                    )}>
+                                        {format(day, "d")}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                     <div className="flex min-h-max isolate">
                         {/* Time labels axis */}
                         <div className="w-16 shrink-0 border-r border-border bg-muted/10 sticky left-0 z-20">
@@ -440,25 +440,25 @@ export function ModernEventCalendar({
 
         return (
             <div className="flex flex-col h-full bg-background rounded-[var(--radius)] border border-border overflow-hidden shadow-sm">
-                <div className="flex border-b border-border py-4 items-center justify-center bg-muted/40 sticky top-0 z-30">
-                    <div className="flex items-center gap-3">
-                        <span className={cn(
-                            "text-2xl font-semibold w-12 h-12 flex items-center justify-center rounded-full",
-                            isDayToday ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-foreground"
-                        )}>
-                            {format(currentDate, "d")}
-                        </span>
-                        <div className="flex flex-col">
-                            <span className="font-medium text-foreground uppercase tracking-wider text-sm">
-                                {format(currentDate, "EEEE")}
+                <div className="flex-1 overflow-y-auto relative custom-scrollbar scroll-smooth">
+                    <div className="flex border-b border-border py-4 items-center justify-center bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur sticky top-0 z-30">
+                        <div className="flex items-center gap-3">
+                            <span className={cn(
+                                "text-2xl font-semibold w-12 h-12 flex items-center justify-center rounded-full",
+                                isDayToday ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-foreground"
+                            )}>
+                                {format(currentDate, "d")}
                             </span>
-                            <span className="text-muted-foreground text-sm font-medium">
-                                {format(currentDate, "MMMM yyyy")}
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="font-medium text-foreground uppercase tracking-wider text-sm">
+                                    {format(currentDate, "EEEE")}
+                                </span>
+                                <span className="text-muted-foreground text-sm font-medium">
+                                    {format(currentDate, "MMMM yyyy")}
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="flex-1 overflow-y-auto relative custom-scrollbar scroll-smooth">
                     <div className="flex isolate">
                         <div className="w-20 shrink-0 border-r border-border bg-muted/10 sticky left-0 z-20">
                             {hours.map((hour) => (

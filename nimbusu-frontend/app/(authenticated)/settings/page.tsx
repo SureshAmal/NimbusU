@@ -222,8 +222,9 @@ function SecuritySettings() {
             setOldPassword("");
             setNewPassword("");
             setConfirmPassword("");
-        } catch (err: any) {
-            const msg = err?.response?.data?.message || err?.response?.data?.detail || "Failed to change password.";
+        } catch (err: unknown) {
+            const errorObj = err as { response?: { data?: { message?: string, detail?: string } } };
+            const msg = errorObj?.response?.data?.message || errorObj?.response?.data?.detail || "Failed to change password.";
             toast.error(msg);
         } finally {
             setSaving(false);

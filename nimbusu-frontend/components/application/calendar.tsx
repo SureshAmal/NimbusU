@@ -64,7 +64,7 @@ interface CalendarProps {
   onAddEvent?: (date?: Date) => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
-  onFilterChange?: (filter: any) => void;
+  onFilterChange?: (filter: unknown) => void;
 }
 
 type ViewMode = "month" | "week" | "day";
@@ -145,7 +145,7 @@ export function EventCalendar({
                 className={cn(
                   "min-h-[120px] p-2 border-r border-b border-border transition-colors cursor-default",
                   !isSameMonth(day, monthStart) &&
-                    "bg-muted/30 text-muted-foreground/70",
+                  "bg-muted/30 text-muted-foreground/70",
                   (i + 1) % 7 === 0 && "border-r-0",
                 )}
                 onClick={() => onDateClick?.(day)}
@@ -411,7 +411,7 @@ export function EventCalendar({
                         </span>
                         {event.extendedProps &&
                           typeof event.extendedProps.description ===
-                            "string" && (
+                          "string" && (
                             <span className="mt-2 text-xs text-muted-foreground line-clamp-2">
                               {event.extendedProps.description}
                             </span>

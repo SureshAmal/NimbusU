@@ -122,7 +122,38 @@ export default function StudentContentPage() {
             finally { setLoadingPreview(false); }
         }
     }
+
     function closePreview() { setPreviewContent(null); setPreviewUrl(null); setTextPreview(null); }
+
+    // Close preview on escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && previewContent) {
+                closePreview();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [previewContent]);
+
+    async function handleDownload(url: string | null, filename: string) {
+        if (!url) return;
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(blobUrl);
+            document.body.removeChild(a);
+        } catch (error) {
+            toast.error("Failed to download file directly. Opening in new tab instead.");
+            window.open(url, "_blank");
+        }
+    }
 
     const uniqueTypes = useMemo(() => [...new Set(items.map((c) => c.content_type))].sort(), [items]);
 
@@ -242,7 +273,7 @@ export default function StudentContentPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                {previewUrl && <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => window.open(previewUrl, "_blank")} style={{ borderRadius: "var(--radius)" }}><Download className="h-3 w-3" /> Download</Button>}
+                                {previewUrl && <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => handleDownload(previewUrl, previewContent.title || 'download')} style={{ borderRadius: "var(--radius)" }}><Download className="h-3 w-3" /> Download</Button>}
                                 {previewUrl && <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => window.open(previewUrl, "_blank")} style={{ borderRadius: "var(--radius)" }}><ExternalLink className="h-3 w-3" /> Open</Button>}
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closePreview}><X className="h-4 w-4" /></Button>
                             </div>
@@ -266,7 +297,7 @@ export default function StudentContentPage() {
                                 <div className="text-center space-y-3">
                                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mx-auto"><File className="h-8 w-8 text-muted-foreground" /></div>
                                     <p className="text-sm text-muted-foreground">Preview not available</p>
-                                    {previewUrl && <Button size="sm" onClick={() => window.open(previewUrl, "_blank")} style={{ borderRadius: "var(--radius)" }}><Download className="h-3.5 w-3.5 mr-1.5" /> Download</Button>}
+                                    {previewUrl && <Button size="sm" onClick={() => handleDownload(previewUrl, previewContent.title || 'download')} style={{ borderRadius: "var(--radius)" }}><Download className="h-3.5 w-3.5 mr-1.5" /> Download</Button>}
                                 </div>
                             )}
                         </div>

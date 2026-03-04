@@ -155,7 +155,12 @@ export function AppSidebar() {
                                 <SidebarMenuItem key={item.url}>
                                     <SidebarMenuButton
                                         asChild
-                                        isActive={pathname === item.url}
+                                        // A route is active if it exactly matches, OR if we're on a sub-path of it
+                                        // For example, /faculty/courses/[id] should highlight /faculty/dashboard (if it's the courses link)
+                                        // Wait, the courses link is actually /faculty/dashboard ? Let's check navItems.
+                                        // If item.url is "/faculty/dashboard", we want it active for "/faculty/dashboard"
+                                        // If item.url is "/faculty/courses", we want it active for "/faculty/courses/123"
+                                        isActive={pathname === item.url || (pathname.startsWith(item.url + "/") && item.url !== "/admin/dashboard" && item.url !== "/faculty/dashboard" && item.url !== "/student/dashboard")}
                                         tooltip={item.title}
                                     >
                                         <Link href={item.url}>

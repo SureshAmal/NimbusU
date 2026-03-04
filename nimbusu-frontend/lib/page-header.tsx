@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 interface PageHeaderInfo {
     title: string;
     subtitle?: string;
+    backUrl?: string;
 }
 
 interface PageHeaderContextValue {

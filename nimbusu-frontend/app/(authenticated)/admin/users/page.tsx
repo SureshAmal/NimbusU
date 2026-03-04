@@ -390,10 +390,10 @@ export default function AdminUsersPage() {
 
       // Strip out irrelevant profiles based on selected role
       if (submitData.role !== "student") {
-        delete (submitData as any).student_profile;
+        delete (submitData as { student_profile?: unknown }).student_profile;
       }
       if (!["faculty", "dean", "head"].includes(submitData.role)) {
-        delete (submitData as any).faculty_profile;
+        delete (submitData as { faculty_profile?: unknown }).faculty_profile;
       }
 
       if (editId) {
