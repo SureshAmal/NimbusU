@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { assignmentsService, attendanceService, contentService, timetableService } from "@/services/api";
 import { usePageHeader } from "@/lib/page-header";
@@ -45,11 +45,9 @@ export default function FacultyCourseDetailPage() {
     const [content, setContent] = useState<Content[]>([]);
     const [loading, setLoading] = useState(true);
     const { setHeader } = usePageHeader();
+    const router = useRouter();
 
-    /* Assignment creation */
-    const [assignDialog, setAssignDialog] = useState(false);
-    const [assignSaving, setAssignSaving] = useState(false);
-    const [assignForm, setAssignForm] = useState({ title: "", description: "", due_date: "", max_marks: 100, assignment_type: "assignment", is_published: true });
+
 
     /* Submission grading */
     const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -121,34 +119,9 @@ export default function FacultyCourseDetailPage() {
         finally { setLoadingAttendance(false); }
     }, [id]);
 
-    async function createAssignment(e: React.FormEvent) {
-        e.preventDefault(); setAssignSaving(true);
-        try {
-            await assignmentsService.create({ ...assignForm, course_offering: id, max_marks: assignForm.max_marks } as unknown as Parameters<typeof assignmentsService.create>[0]);
-            toast.success("Assignment created"); setAssignDialog(false);
-            setAssignForm({ title: "", description: "", due_date: "", max_marks: 100, assignment_type: "assignment", is_published: true });
-            const { data } = await assignmentsService.list({ course_offering: id }); setAssignments(data.results ?? []);
-        } catch { toast.error("Failed to create"); }
-        finally { setAssignSaving(false); }
-    }
 
-    async function viewSubmissions(a: Assignment) {
-        setSubAssignment(a); setSubDialog(true); setLoadingSubs(true);
-        try { const { data } = await assignmentsService.submissions(a.id); setSubmissions(data.results ?? []); }
-        catch { toast.error("Failed to load"); setSubmissions([]); }
-        finally { setLoadingSubs(false); }
-    }
 
-    async function handleGrade(e: React.FormEvent) {
-        e.preventDefault(); if (!subAssignment || !gradeSub) return;
-        setGrading(true);
-        try {
-            await assignmentsService.grade(subAssignment.id, gradeSub.id, { marks_obtained: gradeForm.marks_obtained, grade: gradeForm.grade || undefined, feedback: gradeForm.feedback || undefined });
-            toast.success("Graded!"); setGradeDialog(false);
-            const { data } = await assignmentsService.submissions(subAssignment.id); setSubmissions(data.results ?? []);
-        } catch { toast.error("Failed to grade"); }
-        finally { setGrading(false); }
-    }
+
 
     async function handleUploadContent(e: React.FormEvent) {
         e.preventDefault();
@@ -265,7 +238,7 @@ export default function FacultyCourseDetailPage() {
                 {/* Assignments — flat list */}
                 <TabsContent value="assignments" className="mt-4 space-y-3">
                     <div className="flex justify-end">
-                        <Button size="sm" onClick={() => setAssignDialog(true)} style={{ borderRadius: "var(--radius)" }}><Plus className="h-3.5 w-3.5 mr-1.5" /> New Assignment</Button>
+                        <Button size="sm" onClick={() => router.push(`/faculty/courses/${id}/assignments/new`)} style={{ borderRadius: "var(--radius)" }}><Plus className="h-3.5 w-3.5 mr-1.5" /> New Assignment</Button>
                     </div>
                     {assignments.length === 0 ? (
                         <div className="py-16 text-center text-muted-foreground"><ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-40" />No assignments yet.</div>
@@ -283,9 +256,14 @@ export default function FacultyCourseDetailPage() {
                                             Due {new Date(a.due_date).toLocaleDateString()} · {a.submission_count} submission{a.submission_count !== 1 ? "s" : ""}
                                         </p>
                                     </div>
-                                    <Button variant="outline" size="sm" className="h-7 text-xs shrink-0" onClick={() => viewSubmissions(a)} style={{ borderRadius: "var(--radius)" }}>
-                                        <Eye className="h-3 w-3 mr-1" /> Submissions
-                                    </Button>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => router.push(`/faculty/courses/${id}/assignments/${a.id}/groups`)} style={{ borderRadius: "var(--radius)" }}>
+                                            <Users className="h-3 w-3 mr-1" /> Groups
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => router.push(`/faculty/courses/${id}/assignments/${a.id}/submissions`)} style={{ borderRadius: "var(--radius)" }}>
+                                            <Eye className="h-3 w-3 mr-1" /> Submissions
+                                        </Button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -401,31 +379,7 @@ export default function FacultyCourseDetailPage() {
                 </TabsContent>
             </Tabs>
 
-            {/* Create Assignment Dialog */}
-            <Dialog open={assignDialog} onOpenChange={setAssignDialog}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>New Assignment</DialogTitle></DialogHeader>
-                    <form onSubmit={createAssignment} className="space-y-4">
-                        <div className="space-y-2"><Label>Title</Label><Input value={assignForm.title} onChange={(e) => setAssignForm({ ...assignForm, title: e.target.value })} required /></div>
-                        <div className="space-y-2"><Label>Description</Label><Textarea value={assignForm.description} onChange={(e) => setAssignForm({ ...assignForm, description: e.target.value })} rows={3} /></div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2"><Label>Due Date</Label><Input type="datetime-local" value={assignForm.due_date} onChange={(e) => setAssignForm({ ...assignForm, due_date: e.target.value })} required /></div>
-                            <div className="space-y-2"><Label>Max Marks</Label><Input type="number" value={assignForm.max_marks} onChange={(e) => setAssignForm({ ...assignForm, max_marks: +e.target.value })} required /></div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Type</Label>
-                            <Select value={assignForm.assignment_type} onValueChange={(v) => setAssignForm({ ...assignForm, assignment_type: v })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="assignment">Assignment</SelectItem><SelectItem value="quiz">Quiz</SelectItem>
-                                    <SelectItem value="exam">Exam</SelectItem><SelectItem value="project">Project</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <DialogFooter><Button type="submit" disabled={assignSaving}>{assignSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create</Button></DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+
 
             {/* Upload Content Dialog */}
             <Dialog open={uploadDialog} onOpenChange={(open) => { setUploadDialog(open); if (!open) setUploadFile(null); }}>
@@ -461,46 +415,7 @@ export default function FacultyCourseDetailPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* View Submissions Dialog */}
-            <Dialog open={subDialog} onOpenChange={setSubDialog}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader><DialogTitle>Submissions: {subAssignment?.title}</DialogTitle></DialogHeader>
-                    {loadingSubs ? <div className="space-y-3 py-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
-                        : submissions.length === 0 ? <p className="py-8 text-center text-muted-foreground">No submissions yet.</p>
-                            : (
-                                <div className="space-y-0.5">
-                                    {submissions.map((s) => (
-                                        <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/30" style={{ borderRadius: "var(--radius)" }}>
-                                            <span className="text-sm font-medium flex-1">{s.student_name}</span>
-                                            <span className="text-xs text-muted-foreground">{new Date(s.submitted_at).toLocaleString()}</span>
-                                            <Badge variant={s.status === "graded" ? "default" : "secondary"} className="text-[10px] h-4">{s.status}</Badge>
-                                            <span className="text-sm w-12 text-right">{s.marks_obtained ?? "—"}</span>
-                                            <Button variant="outline" size="sm" className="h-6 text-xs" onClick={() => { setGradeSub(s); setGradeForm({ marks_obtained: s.marks_obtained ?? 0, grade: s.grade ?? "", feedback: s.feedback ?? "" }); setGradeDialog(true); }} style={{ borderRadius: "var(--radius)" }}>
-                                                {s.status === "graded" ? "Edit" : "Grade"}
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                </DialogContent>
-            </Dialog>
 
-            {/* Grade Dialog */}
-            <Dialog open={gradeDialog} onOpenChange={setGradeDialog}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Grade — {gradeSub?.student_name}</DialogTitle></DialogHeader>
-                    <form onSubmit={handleGrade} className="space-y-4">
-                        {gradeSub?.text_content && <div><p className="text-xs text-muted-foreground mb-1">Answer</p><p className="text-sm bg-muted p-3 rounded-md max-h-32 overflow-y-auto whitespace-pre-wrap" style={{ borderRadius: "var(--radius)" }}>{gradeSub.text_content}</p></div>}
-                        {gradeSub?.file && <Button type="button" variant="outline" size="sm" onClick={() => window.open(gradeSub.file!, "_blank")}><Download className="h-3.5 w-3.5 mr-1.5" /> View File</Button>}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2"><Label>Marks (/ {subAssignment?.max_marks})</Label><Input type="number" value={gradeForm.marks_obtained} onChange={(e) => setGradeForm({ ...gradeForm, marks_obtained: +e.target.value })} min={0} max={subAssignment?.max_marks} required /></div>
-                            <div className="space-y-2"><Label>Grade</Label><Input value={gradeForm.grade} onChange={(e) => setGradeForm({ ...gradeForm, grade: e.target.value })} placeholder="A+, B, etc" /></div>
-                        </div>
-                        <div className="space-y-2"><Label>Feedback</Label><Textarea value={gradeForm.feedback} onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })} rows={3} /></div>
-                        <DialogFooter><Button type="submit" disabled={grading}>{grading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save</Button></DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Mail, Plus, Inbox, Send, Loader2, ArrowLeft, Clock } from "lucide-react";
+import { Mail, Plus, Inbox, Send, Loader2, ArrowLeft, Clock, Paperclip, FileText } from "lucide-react";
 
 export default function FacultyMessagesPage() {
     const { user } = useAuth();
@@ -28,6 +28,7 @@ export default function FacultyMessagesPage() {
     const [receiver, setReceiver] = useState("");
     const [subject, setSubject] = useState("");
     const [body, setBody] = useState("");
+    const [file, setFile] = useState<File | null>(null);
     const [recipientFilter, setRecipientFilter] = useState<"student" | "faculty">("student");
 
     async function fetchMessages() {
@@ -51,7 +52,22 @@ export default function FacultyMessagesPage() {
         e.preventDefault();
         if (!receiver || !body.trim()) { toast.error("Fill all required fields"); return; }
         setSending(true);
-        try { await messagesService.send({ receiver, subject, body }); toast.success("Sent!"); setComposeOpen(false); setReceiver(""); setSubject(""); setBody(""); fetchMessages(); }
+        try {
+            const formData = new FormData();
+            formData.append("receiver", receiver);
+            formData.append("subject", subject);
+            formData.append("body", body);
+            if (file) formData.append("file", file);
+
+            await messagesService.send(formData);
+            toast.success("Sent!");
+            setComposeOpen(false);
+            setReceiver("");
+            setSubject("");
+            setBody("");
+            setFile(null);
+            fetchMessages();
+        }
         catch { toast.error("Failed to send"); }
         finally { setSending(false); }
     }
@@ -77,9 +93,22 @@ export default function FacultyMessagesPage() {
                         </div>
                         <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(m.created_at).toLocaleString()}</span>
                     </div>
-                    <div className="border-t pt-4"><p className="text-sm whitespace-pre-wrap leading-relaxed">{m.body}</p></div>
+                    <div className="border-t pt-4">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                        {m.file && (
+                            <div className="mt-4 p-3 border rounded-lg bg-muted/50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                    <span className="text-sm font-medium">{m.file_name || "Attachment"}</span>
+                                </div>
+                                <Button variant="outline" size="sm" asChild>
+                                    <a href={m.file} target="_blank" rel="noreferrer">Download</a>
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                     {isIncoming && (
-                        <Button size="sm" onClick={() => { setReceiver(m.sender); setSubject(m.subject?.startsWith("Re: ") ? m.subject : `Re: ${m.subject}`); setBody(""); setSelectedMessage(null); setComposeOpen(true); }}>
+                        <Button size="sm" onClick={() => { setReceiver(m.sender); setSubject(m.subject?.startsWith("Re: ") ? m.subject : `Re: ${m.subject}`); setBody(""); setFile(null); setSelectedMessage(null); setComposeOpen(true); }}>
                             <Send className="h-3.5 w-3.5 mr-1.5" /> Reply
                         </Button>
                     )}
@@ -108,7 +137,10 @@ export default function FacultyMessagesPage() {
                                     <p className={`text-sm ${!m.is_read && isIncoming ? "font-semibold" : "font-medium"}`}>{isIncoming ? m.sender_name : m.receiver_name}</p>
                                     {!m.is_read && isIncoming && <Badge variant="default" className="h-4 text-[10px] px-1.5">New</Badge>}
                                 </div>
-                                <p className="text-sm truncate">{m.subject || "(No Subject)"}</p>
+                                <p className="text-sm truncate flex items-center gap-1">
+                                    {m.subject || "(No Subject)"}
+                                    {m.file && <Paperclip className="h-3 w-3 text-muted-foreground inline" />}
+                                </p>
                                 <p className="text-xs text-muted-foreground truncate">{m.body}</p>
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{new Date(m.created_at).toLocaleDateString()}</span>
@@ -154,6 +186,12 @@ export default function FacultyMessagesPage() {
                         </div>
                         <div className="space-y-2"><Label>Subject</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" /></div>
                         <div className="space-y-2"><Label>Message</Label><Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write..." rows={5} required /></div>
+
+                        <div className="space-y-2">
+                            <Label>Attachment (Optional)</Label>
+                            <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                        </div>
+
                         <DialogFooter><Button type="submit" disabled={sending}>{sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<Send className="h-4 w-4 mr-2" /> Send</Button></DialogFooter>
                     </form>
                 </DialogContent>

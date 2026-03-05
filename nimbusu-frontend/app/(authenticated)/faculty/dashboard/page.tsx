@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { assignmentsService, attendanceService, offeringsService } from "@/services/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, Users, Target } from "lucide-react";
+import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, Users, Target, AlertTriangle } from "lucide-react";
 import type { TimetableEntry, Assignment, CourseOffering } from "@/lib/types";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
@@ -60,6 +60,7 @@ export default function FacultyDashboardPage() {
     const [totalSubmissions, setTotalSubmissions] = useState(0);
     const [gradedSubmissions, setGradedSubmissions] = useState(0);
     const [courseStudentCounts, setCourseStudentCounts] = useState<Array<{ name: string; students: number }>>([]);
+    const [lowAttendanceAlerts, setLowAttendanceAlerts] = useState<Array<{ student_name: string; course_name: string; percentage: number }>>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -110,6 +111,13 @@ export default function FacultyDashboardPage() {
                 setPendingGrades(pending);
                 setTotalSubmissions(totalSubs);
                 setGradedSubmissions(graded);
+
+                // Fetch Attendance Alerts
+                try {
+                    const alertRes = await attendanceService.lowAlert();
+                    const alerts = alertRes.data?.results ?? alertRes.data ?? [];
+                    setLowAttendanceAlerts(alerts.slice(0, 5)); // Keep top 5
+                } catch { /* skip */ }
             } catch { /* ignore */ }
             finally { setLoading(false); }
         }
@@ -161,11 +169,12 @@ export default function FacultyDashboardPage() {
             </div>
 
             {/* Stat Cards */}
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
                 <StatCard label="Today's Classes" value={todayClasses.length} change={`${timetable.length} total / week`} trend="neutral" icon={Calendar} />
                 <StatCard label="Total Courses" value={offerings.length} change={`${totalStudents} students`} trend="neutral" icon={BookOpen} />
                 <StatCard label="Grading Rate" value={`${gradingRate}%`} change={`${gradedSubmissions}/${totalSubmissions} graded`} trend={gradingRate >= 80 ? "up" : "down"} icon={Target} />
                 <StatCard label="Pending Grades" value={pendingGrades} change={pendingGrades === 0 ? "All caught up!" : "Needs attention"} trend={pendingGrades === 0 ? "up" : "down"} icon={ClipboardList} />
+                <StatCard label="Low Attendance" value={lowAttendanceAlerts.length} change="< 75% alerts" trend={lowAttendanceAlerts.length === 0 ? "up" : "down"} icon={AlertTriangle} />
             </div>
 
             {/* Charts Row 1 */}
@@ -248,10 +257,38 @@ export default function FacultyDashboardPage() {
                 </div>
             </div>
 
-            {/* Bottom Row */}
-            <div className="grid gap-4 md:grid-cols-2">
-                {/* Weekly Schedule */}
-                <div className="rounded-xl border p-4" style={{ borderRadius: "var(--radius-lg)" }}>
+            {/* Lower row replacing Bottom Row elements to add Attendance Alerts */}
+            <div className="grid gap-4 md:grid-cols-3">
+                {/* Attendance Alerts */}
+                <div className="md:col-span-1 rounded-xl border p-4" style={{ borderRadius: "var(--radius-lg)" }}>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-rose-500" /> Attendance Alerts
+                        </h3>
+                        <Badge variant="secondary" className="text-[10px]">{lowAttendanceAlerts.length} students</Badge>
+                    </div>
+                    {lowAttendanceAlerts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-8 text-center bg-emerald-500/10 rounded-lg text-emerald-600 mt-2">All students have good attendance 🎉</p>
+                    ) : (
+                        <div className="space-y-2 mt-2">
+                            {lowAttendanceAlerts.map((alert, i) => (
+                                <div key={i} className="flex flex-col gap-1 p-3 rounded-lg border bg-rose-500/5 hover:bg-rose-500/10 transition-colors" style={{ borderRadius: "var(--radius)" }}>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-medium">{alert.student_name || "Student"}</p>
+                                        <span className="text-xs font-bold text-rose-600">{alert.percentage ?? 0}%</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate">{alert.course_name || "Course"}</p>
+                                    <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mt-1">
+                                        <div className="h-full rounded-full bg-rose-500" style={{ width: `${alert.percentage ?? 0}%` }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Weekly Schedule moved to span 1 */}
+                <div className="md:col-span-1 rounded-xl border p-4" style={{ borderRadius: "var(--radius-lg)" }}>
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <h3 className="text-sm font-semibold">Weekly Class Load</h3>

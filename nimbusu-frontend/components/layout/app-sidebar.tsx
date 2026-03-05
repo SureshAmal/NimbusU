@@ -20,6 +20,7 @@ import {
     Sun,
     Shield,
     Users,
+    Building,
     Building2,
     BookMarked,
     BarChart3,
@@ -56,6 +57,7 @@ const adminNav = [
     { title: "Announcements", url: "/admin/announcements", icon: Bell },
     { title: "Audit Logs", url: "/admin/audit-logs", icon: ScrollText },
     { title: "Notifications", url: "/admin/notifications", icon: BarChart3 },
+    { title: "Room Bookings", url: "/admin/room-bookings", icon: Building },
     { title: "Telemetry", url: "/admin/telemetry", icon: Activity },
 ];
 
@@ -63,6 +65,7 @@ const facultyNav = [
     { title: "Dashboard", url: "/faculty/dashboard", icon: LayoutDashboard },
     { title: "My Courses", url: "/faculty/courses", icon: BookOpen },
     { title: "Timetable", url: "/faculty/timetable", icon: Calendar },
+    { title: "Room Bookings", url: "/faculty/room-bookings", icon: Building },
     { title: "Messages", url: "/faculty/messages", icon: Mail },
     { title: "Announcements", url: "/faculty/announcements", icon: Bell },
 ];

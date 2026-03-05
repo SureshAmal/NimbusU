@@ -27,7 +27,7 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "calc(var(--spacing) * 64)"
+const SIDEBAR_WIDTH = "calc(var(--spacing) * 44)"
 const SIDEBAR_WIDTH_MOBILE = "calc(var(--spacing) * 72)"
 const SIDEBAR_WIDTH_ICON = "calc(var(--spacing) * 12)"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"

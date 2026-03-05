@@ -342,6 +342,202 @@ const COLOR_PRESETS: ColorPreset[] = [
     light: lightPalette(264, 0.005),
     dark: darkPalette(264, 0.008),
   },
+  {
+    name: "VS Code",
+    dot: "#007acc",
+    primary: "oklch(0.55 0.15 250)",
+    primaryForeground: "oklch(0.985 0 0)",
+    accent: "oklch(0.3 0.1 250)",
+    accentForeground: "oklch(0.985 0 0)",
+    ring: "oklch(0.55 0.15 250)",
+    destructive: "oklch(0.577 0.245 27)",
+    chart1: "oklch(0.55 0.15 250)",
+    chart2: "oklch(0.8 0.15 85)",
+    chart3: "oklch(0.65 0.2 15)",
+    chart4: "oklch(0.7 0.15 160)",
+    chart5: "oklch(0.6 0.25 320)",
+    light: {
+      background: "oklch(0.98 0.01 250)",
+      foreground: "oklch(0.25 0.02 250)",
+      card: "oklch(1 0 0)",
+      cardForeground: "oklch(0.25 0.02 250)",
+      popover: "oklch(1 0 0)",
+      popoverForeground: "oklch(0.25 0.02 250)",
+      secondary: "oklch(0.95 0.02 250)",
+      secondaryForeground: "oklch(0.25 0.02 250)",
+      muted: "oklch(0.95 0.02 250)",
+      mutedForeground: "oklch(0.5 0.02 250)",
+      border: "oklch(0.9 0.02 250)",
+      input: "oklch(0.9 0.02 250)",
+      sidebar: "oklch(0.96 0.01 250)",
+      sidebarForeground: "oklch(0.25 0.02 250)",
+      sidebarBorder: "oklch(0.9 0.02 250)",
+    },
+    dark: {
+      background: "oklch(0.22 0.02 250)",
+      foreground: "oklch(0.9 0.02 250)",
+      card: "oklch(0.25 0.02 250)",
+      cardForeground: "oklch(0.9 0.02 250)",
+      popover: "oklch(0.25 0.02 250)",
+      popoverForeground: "oklch(0.9 0.02 250)",
+      secondary: "oklch(0.3 0.03 250)",
+      secondaryForeground: "oklch(0.9 0.02 250)",
+      muted: "oklch(0.3 0.03 250)",
+      mutedForeground: "oklch(0.7 0.02 250)",
+      border: "oklch(0.35 0.03 250)",
+      input: "oklch(0.35 0.03 250)",
+      sidebar: "oklch(0.2 0.02 250)",
+      sidebarForeground: "oklch(0.9 0.02 250)",
+      sidebarBorder: "oklch(0.25 0.02 250)",
+    },
+  },
+  {
+    name: "GitHub",
+    dot: "#24292e",
+    primary: "oklch(0.25 0.01 250)",
+    primaryForeground: "oklch(0.985 0 0)",
+    accent: "oklch(0.95 0.01 250)",
+    accentForeground: "oklch(0.25 0.01 250)",
+    ring: "oklch(0.6 0.15 250)",
+    destructive: "oklch(0.577 0.245 27)",
+    chart1: "oklch(0.25 0.01 250)",
+    chart2: "oklch(0.6 0.15 250)",
+    chart3: "oklch(0.7 0.15 150)",
+    chart4: "oklch(0.65 0.2 15)",
+    chart5: "oklch(0.55 0.2 320)",
+    light: {
+      background: "oklch(1 0 0)",
+      foreground: "oklch(0.25 0.01 250)",
+      card: "oklch(1 0 0)",
+      cardForeground: "oklch(0.25 0.01 250)",
+      popover: "oklch(1 0 0)",
+      popoverForeground: "oklch(0.25 0.01 250)",
+      secondary: "oklch(0.96 0.01 250)",
+      secondaryForeground: "oklch(0.25 0.01 250)",
+      muted: "oklch(0.96 0.01 250)",
+      mutedForeground: "oklch(0.55 0.01 250)",
+      border: "oklch(0.9 0.01 250)",
+      input: "oklch(0.9 0.01 250)",
+      sidebar: "oklch(0.98 0.01 250)",
+      sidebarForeground: "oklch(0.25 0.01 250)",
+      sidebarBorder: "oklch(0.9 0.01 250)",
+    },
+    dark: {
+      background: "oklch(0.2 0.01 250)",
+      foreground: "oklch(0.9 0.01 250)",
+      card: "oklch(0.22 0.01 250)",
+      cardForeground: "oklch(0.9 0.01 250)",
+      popover: "oklch(0.22 0.01 250)",
+      popoverForeground: "oklch(0.9 0.01 250)",
+      secondary: "oklch(0.28 0.01 250)",
+      secondaryForeground: "oklch(0.9 0.01 250)",
+      muted: "oklch(0.28 0.01 250)",
+      mutedForeground: "oklch(0.65 0.01 250)",
+      border: "oklch(0.35 0.01 250)",
+      input: "oklch(0.35 0.01 250)",
+      sidebar: "oklch(0.18 0.01 250)",
+      sidebarForeground: "oklch(0.9 0.01 250)",
+      sidebarBorder: "oklch(0.25 0.01 250)",
+    },
+  },
+  {
+    name: "Glassmorphic",
+    dot: "#e0f2fe",
+    primary: "oklch(0.8 0.1 220)",
+    primaryForeground: "oklch(0.3 0.1 220)",
+    accent: "oklch(0.95 0.05 220)",
+    accentForeground: "oklch(0.3 0.1 220)",
+    ring: "oklch(0.8 0.1 220)",
+    destructive: "oklch(0.6 0.2 25)",
+    chart1: "oklch(0.8 0.1 220)",
+    chart2: "oklch(0.85 0.1 260)",
+    chart3: "oklch(0.75 0.15 320)",
+    chart4: "oklch(0.85 0.15 150)",
+    chart5: "oklch(0.75 0.15 40)",
+    light: {
+      background: "oklch(0.98 0.02 220)",
+      foreground: "oklch(0.3 0.05 220)",
+      card: "oklch(1 0.01 220 / 70%)",
+      cardForeground: "oklch(0.3 0.05 220)",
+      popover: "oklch(1 0.01 220 / 70%)",
+      popoverForeground: "oklch(0.3 0.05 220)",
+      secondary: "oklch(0.95 0.03 220 / 50%)",
+      secondaryForeground: "oklch(0.3 0.05 220)",
+      muted: "oklch(0.95 0.03 220 / 50%)",
+      mutedForeground: "oklch(0.5 0.05 220)",
+      border: "oklch(0.9 0.05 220 / 30%)",
+      input: "oklch(0.9 0.05 220 / 30%)",
+      sidebar: "oklch(0.95 0.02 220 / 60%)",
+      sidebarForeground: "oklch(0.3 0.05 220)",
+      sidebarBorder: "oklch(0.9 0.05 220 / 30%)",
+    },
+    dark: {
+      background: "oklch(0.2 0.05 220)",
+      foreground: "oklch(0.95 0.02 220)",
+      card: "oklch(0.25 0.05 220 / 40%)",
+      cardForeground: "oklch(0.95 0.02 220)",
+      popover: "oklch(0.25 0.05 220 / 40%)",
+      popoverForeground: "oklch(0.95 0.02 220)",
+      secondary: "oklch(0.3 0.08 220 / 30%)",
+      secondaryForeground: "oklch(0.95 0.02 220)",
+      muted: "oklch(0.3 0.08 220 / 30%)",
+      mutedForeground: "oklch(0.7 0.05 220)",
+      border: "oklch(0.4 0.1 220 / 20%)",
+      input: "oklch(0.4 0.1 220 / 20%)",
+      sidebar: "oklch(0.22 0.06 220 / 50%)",
+      sidebarForeground: "oklch(0.95 0.02 220)",
+      sidebarBorder: "oklch(0.4 0.1 220 / 20%)",
+    },
+  },
+  {
+    name: "Apple Liquid Glass",
+    dot: "#a78bfa",
+    primary: "oklch(0.7 0.15 290)",
+    primaryForeground: "oklch(0.2 0.1 290)",
+    accent: "oklch(0.9 0.1 290)",
+    accentForeground: "oklch(0.2 0.1 290)",
+    ring: "oklch(0.7 0.15 290)",
+    destructive: "oklch(0.6 0.25 25)",
+    chart1: "oklch(0.7 0.15 290)",
+    chart2: "oklch(0.8 0.15 320)",
+    chart3: "oklch(0.65 0.2 260)",
+    chart4: "oklch(0.75 0.15 200)",
+    chart5: "oklch(0.85 0.1 160)",
+    light: {
+      background: "oklch(0.95 0.01 290)",
+      foreground: "oklch(0.2 0.05 290)",
+      card: "oklch(1 0.01 290 / 40%)",
+      cardForeground: "oklch(0.2 0.05 290)",
+      popover: "oklch(1 0.01 290 / 40%)",
+      popoverForeground: "oklch(0.2 0.05 290)",
+      secondary: "oklch(0.9 0.03 290 / 30%)",
+      secondaryForeground: "oklch(0.2 0.05 290)",
+      muted: "oklch(0.9 0.03 290 / 30%)",
+      mutedForeground: "oklch(0.4 0.05 290)",
+      border: "oklch(0.85 0.05 290 / 20%)",
+      input: "oklch(0.85 0.05 290 / 20%)",
+      sidebar: "oklch(0.95 0.02 290 / 50%)",
+      sidebarForeground: "oklch(0.2 0.05 290)",
+      sidebarBorder: "oklch(0.85 0.05 290 / 20%)",
+    },
+    dark: {
+      background: "oklch(0.15 0.05 290)",
+      foreground: "oklch(0.95 0.02 290)",
+      card: "oklch(0.2 0.05 290 / 30%)",
+      cardForeground: "oklch(0.95 0.02 290)",
+      popover: "oklch(0.2 0.05 290 / 30%)",
+      popoverForeground: "oklch(0.95 0.02 290)",
+      secondary: "oklch(0.25 0.08 290 / 20%)",
+      secondaryForeground: "oklch(0.95 0.02 290)",
+      muted: "oklch(0.25 0.08 290 / 20%)",
+      mutedForeground: "oklch(0.7 0.05 290)",
+      border: "oklch(0.3 0.1 290 / 15%)",
+      input: "oklch(0.3 0.1 290 / 15%)",
+      sidebar: "oklch(0.18 0.06 290 / 40%)",
+      sidebarForeground: "oklch(0.95 0.02 290)",
+      sidebarBorder: "oklch(0.3 0.1 290 / 15%)",
+    },
+  },
 ];
 
 const FONT_OPTIONS: SelectOption[] = [
@@ -351,6 +547,15 @@ const FONT_OPTIONS: SelectOption[] = [
   { value: "Poppins", label: "Poppins" },
   { value: "system-ui", label: "System UI" },
   { value: "monospace", label: "Monospace" },
+  { value: '"Comic Neue", cursive', label: "Cursive" },
+  { value: '"Press Start 2P", monospace', label: "Pixel Art" },
+];
+
+const BORDER_STYLE_OPTIONS: SelectOption[] = [
+  { value: "solid", label: "Solid" },
+  { value: "dashed", label: "Dashed" },
+  { value: "dotted", label: "Dotted" },
+  { value: "double", label: "Double" },
 ];
 
 const PRESET_OPTIONS: SelectOption[] = COLOR_PRESETS.map((p) => ({
@@ -400,6 +605,7 @@ export function SettingsPopup() {
   const [shadow, setShadow] = useState(50);
   const [blur, setBlur] = useState(8);
   const [transition, setTransition] = useState(250);
+  const [borderStyle, setBorderStyle] = useState("solid");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -429,6 +635,14 @@ export function SettingsPopup() {
       const r = parseFloat(getCss("--radius"));
       setRadius(r ? Math.round(r * 16) : 10);
       setBlur(parseInt(getCss("--blur-md")) || 8);
+      setBorderStyle(getCss("--border-style") || "solid");
+
+      const currentFont = getCss("--font-sans");
+      if (currentFont.includes("Press Start 2P")) {
+        setCss("--font-scale", "0.75");
+      } else {
+        setCss("--font-scale", "1");
+      }
     };
     updateStateFromCss();
   }, [open]);
@@ -437,11 +651,18 @@ export function SettingsPopup() {
   function onFontChange(v: string) {
     setFont(v);
     setCss("--font-sans", v + ", sans-serif");
+
+    // Scale down Pixel Art font as it tends to be very large
+    if (v.includes("Press Start 2P")) {
+      setCss("--font-scale", "0.75");
+    } else {
+      setCss("--font-scale", "1");
+    }
   }
 
   function onFontSizeChange(v: number) {
     setFontSize(v);
-    setCss("--text-base", `${v / 16}rem`);
+    document.documentElement.style.fontSize = `${v}px`;
   }
 
   function onHeadingSizeChange(v: number) {
@@ -484,6 +705,11 @@ export function SettingsPopup() {
     setCss("--blur-sm", `${Math.max(2, v / 2)}px`);
     setCss("--blur-md", `${v}px`);
     setCss("--blur-lg", `${v * 2}px`);
+  }
+
+  function onBorderStyleChange(v: string) {
+    setBorderStyle(v);
+    setCss("--border-style", v);
   }
 
   function onTransitionChange(v: number) {
@@ -610,7 +836,8 @@ export function SettingsPopup() {
     | "radius"
     | "shadow"
     | "blur"
-    | "transition";
+    | "transition"
+    | "borderStyle";
   const sectionLabels: Record<SectionKey, string[]> = {
     scheme: ["color scheme light dark system theme"],
     accent: ["accent color primary"],
@@ -624,6 +851,7 @@ export function SettingsPopup() {
     shadow: ["shadow depth intensity"],
     blur: ["backdrop blur glass"],
     transition: ["transition speed duration"],
+    borderStyle: ["border style dashed dotted double solid"],
   };
 
   function visible(key: SectionKey) {
@@ -668,6 +896,15 @@ export function SettingsPopup() {
                   .settings-scroll::-webkit-scrollbar-track { background: transparent; }
                   .settings-scroll::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 999px; }
                   .settings-scroll::-webkit-scrollbar-thumb:hover { background: var(--ring); }
+                  :root {
+                    --border-style: solid;
+                  }
+                  *:not(.border-none) {
+                    border-style: var(--border-style, solid) !important;
+                  }
+                  path, svg, g {
+                    border-style: none !important;
+                  }
                 `}</style>
       <div
         className="flex-1 overflow-y-auto settings-scroll"
@@ -820,6 +1057,18 @@ export function SettingsPopup() {
               max={20}
               step={1}
               onChange={onRadiusChange}
+            />
+          </Row>
+        )}
+
+        {/* Border Style — Select */}
+        {visible("borderStyle") && (
+          <Row label="Border Style" desc="Style of the component borders">
+            <CustomSelect
+              value={borderStyle}
+              options={BORDER_STYLE_OPTIONS}
+              onChange={onBorderStyleChange}
+              placeholder="Choose border style"
             />
           </Row>
         )}

@@ -58,7 +58,7 @@ export function CustomStepper({ value, min, max, step = 1, onChange }: CustomSte
 
     return (
         <div
-            className="inline-flex items-center overflow-hidden focus-visible:outline-hidden"
+            className="inline-flex items-center overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style={{
                 borderRadius: "var(--radius, 8px)",
                 border: "1px solid var(--border)",

@@ -115,8 +115,13 @@ class UserListCreateView(generics.ListCreateAPIView):
         .prefetch_related("student_profile__program", "faculty_profile")
         .all()
     )
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [permissions.IsAuthenticated(), IsAdmin()]
+        return [permissions.IsAuthenticated()]
+    
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+
     filterset_fields = ["role", "department", "is_active", "department__school", "student_profile__current_semester"]
     search_fields = ["email", "first_name", "last_name"]
     ordering_fields = ["created_at", "email", "first_name"]

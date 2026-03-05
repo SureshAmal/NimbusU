@@ -70,6 +70,7 @@ import {
   Filter,
   Eye,
   EyeOff,
+  Upload,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -115,6 +116,11 @@ export default function AdminUsersPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
   const [resettingPw, setResettingPw] = useState(false);
+
+  // Bulk Upload logic
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [bulkUploadFile, setBulkUploadFile] = useState<File | null>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
 
   // Lookup data for filters and form dropdowns
   const [schools, setSchools] = useState<School[]>([]);
@@ -452,6 +458,25 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleBulkUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bulkUploadFile) return;
+    setBulkUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", bulkUploadFile);
+      await usersService.bulkCreate(formData);
+      toast.success("Users imported successfully");
+      setBulkUploadOpen(false);
+      setBulkUploadFile(null);
+      fetchUsers({ showLoading: true });
+    } catch {
+      toast.error("Failed to upload users");
+    } finally {
+      setBulkUploading(false);
+    }
+  }
+
   async function handleToggleActive(user: User) {
     // Optimistic update — flip locally first
     setUsers((prev) =>
@@ -554,6 +579,14 @@ export default function AdminUsersPage() {
                       <X className="h-3 w-3" /><span className="hidden sm:inline">Clear</span>
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    className="h-9 gap-1 shrink-0"
+                    variant="outline"
+                    onClick={() => { setBulkUploadFile(null); setBulkUploadOpen(true); }}
+                  >
+                    <Upload className="h-3.5 w-3.5" /><span className="hidden sm:inline">Bulk Upload</span>
+                  </Button>
                   <Button
                     size="sm"
                     className="h-9 gap-1 shrink-0"

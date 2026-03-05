@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Press+Start+2P&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -190,6 +192,10 @@
 
 /* ─── Base ────────────────────────────────────────────────────────── */
 @layer base {
+    :root {
+        --font-scale: 1;
+    }
+
     * {
         @apply border-border outline-ring/50;
     }
@@ -197,8 +203,17 @@
     body {
         @apply bg-background text-foreground;
         font-family: var(--font-sans);
-        font-size: var(--text-base);
+        font-size: calc(var(--text-base) * var(--font-scale));
         line-height: var(--leading-normal);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-size: calc(1em * var(--font-scale));
     }
 }
 

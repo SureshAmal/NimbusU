@@ -6,6 +6,7 @@ import {
   coursesService,
   offeringsService,
   usersService,
+  enrollmentsService,
 } from "@/services/api";
 import type { Semester, Course, CourseOffering } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,14 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -48,6 +57,8 @@ import {
   Search,
   Users,
   Trash2,
+  Upload,
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -99,6 +110,11 @@ export default function AdminAcademicsPage() {
   const [offeringSaving, setOfferingSaving] = useState(false);
   const [offeringEditId, setOfferingEditId] = useState<string | null>(null);
   const [offeringCtx, setOfferingCtx] = useState<CourseOffering | null>(null);
+
+  // Bulk Upload Enrollments logic
+  const [enrollmentsUploadOpen, setEnrollmentsUploadOpen] = useState(false);
+  const [enrollmentsUploadFile, setEnrollmentsUploadFile] = useState<File | null>(null);
+  const [enrollmentsUploading, setEnrollmentsUploading] = useState(false);
 
   const fetchAll = useCallback(async (opts?: { showLoading?: boolean }) => {
     if (opts?.showLoading) setInitialLoading(true);
@@ -283,6 +299,40 @@ export default function AdminAcademicsPage() {
     } catch {
       setOfferings(prev);
       toast.error("Failed to delete");
+    }
+  }
+
+  async function handleEnrollmentsBulkUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!enrollmentsUploadFile) return;
+    setEnrollmentsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", enrollmentsUploadFile);
+      await enrollmentsService.bulkCreate(formData);
+      toast.success("Enrollments imported successfully");
+      setEnrollmentsUploadOpen(false);
+      setEnrollmentsUploadFile(null);
+      fetchAll();
+    } catch {
+      toast.error("Failed to upload enrollments");
+    } finally {
+      setEnrollmentsUploading(false);
+    }
+  }
+
+  async function handleExportEnrollments() {
+    try {
+      const { data } = await enrollmentsService.export();
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `enrollments_export_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      toast.error("Failed to export enrollments");
     }
   }
 
@@ -621,6 +671,22 @@ export default function AdminAcademicsPage() {
                         className="pl-9 h-8 text-sm border-none shadow-none bg-transparent focus-visible:ring-0"
                       />
                     </div>
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1"
+                      variant="outline"
+                      onClick={handleExportEnrollments}
+                    >
+                      <Download className="h-3.5 w-3.5" /> Export
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1"
+                      variant="outline"
+                      onClick={() => { setEnrollmentsUploadFile(null); setEnrollmentsUploadOpen(true); }}
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Bulk Enroll
+                    </Button>
                     <Button
                       size="sm"
                       className="h-8 gap-1"
@@ -991,6 +1057,38 @@ export default function AdminAcademicsPage() {
           </form>
         </SheetContent>
       </Sheet>
+
+      {/* Bulk Upload Dialog */}
+      <Dialog open={enrollmentsUploadOpen} onOpenChange={setEnrollmentsUploadOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Enroll Students</DialogTitle>
+            <DialogDescription>
+              Upload a JSON or CSV file containing enrollment details.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEnrollmentsBulkUpload} className="space-y-4">
+            <div className="space-y-2">
+              <Label>File Upload</Label>
+              <Input
+                type="file"
+                accept=".json,.csv"
+                onChange={(e) => setEnrollmentsUploadFile(e.target.files?.[0] || null)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setEnrollmentsUploadOpen(false)} disabled={enrollmentsUploading}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!enrollmentsUploadFile || enrollmentsUploading}>
+                {enrollmentsUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Upload
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

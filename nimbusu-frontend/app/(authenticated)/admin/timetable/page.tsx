@@ -375,7 +375,7 @@ export default function AdminTimetablePage() {
 
   // Shared form fields renderer
   const renderFormFields = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="flex flex-col gap-4">
       <div className="space-y-2">
         <Label>Course Offering *</Label>
         <Select

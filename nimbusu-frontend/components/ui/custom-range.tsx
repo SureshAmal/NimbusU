@@ -102,7 +102,7 @@ export function CustomRange({ value, min, max, step = 1, onChange, label }: Cust
     return (
         <div
             ref={trackRef}
-            className="relative w-44 h-5 flex items-center cursor-pointer select-none"
+            className="relative w-44 h-5 flex items-center cursor-pointer select-none focus-visible:outline"
             role="slider"
             aria-valuenow={value}
             aria-valuemin={min}

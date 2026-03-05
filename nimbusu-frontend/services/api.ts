@@ -136,12 +136,14 @@ export const offeringsService = {
 
 export const enrollmentsService = {
     create: (data: { student: string; course_offering: string }) =>
-        api.post<Enrollment>("/academics/enrollments/", data),
+        api.post<Enrollment>("/enrollments/", data),
     mine: () =>
-        api.get<PaginatedResponse<Enrollment>>("/academics/enrollments/me/"),
+        api.get<PaginatedResponse<Enrollment>>("/enrollments/me/"),
     bulkCreate: (data: any) =>
-        api.post<{ status: string; message: string }>("/academics/enrollments/bulk-create/", data),
-    delete: (id: string) => api.delete(`/academics/enrollments/${id}/`),
+        api.post<{ status: string; message: string }>("/enrollments/bulk-create/", data),
+    export: (params?: Record<string, string>) =>
+        api.get<Blob>("/enrollments/export/", { params, responseType: "blob" }),
+    delete: (id: string) => api.delete(`/enrollments/${id}/`),
 };
 
 export const prerequisitesService = {
@@ -343,9 +345,9 @@ export const announcementsService = {
         api.get<PaginatedResponse<Announcement>>("/communications/announcements/", { params }),
     get: (id: string) =>
         api.get<Announcement>(`/communications/announcements/${id}/`),
-    create: (data: Partial<Announcement>) =>
+    create: (data: Partial<Announcement> | FormData) =>
         api.post<Announcement>("/communications/announcements/", data),
-    update: (id: string, data: Partial<Announcement>) =>
+    update: (id: string, data: Partial<Announcement> | FormData) =>
         api.patch<Announcement>(`/communications/announcements/${id}/`, data),
     delete: (id: string) =>
         api.delete(`/communications/announcements/${id}/`),
@@ -355,7 +357,7 @@ export const messagesService = {
     list: () =>
         api.get<PaginatedResponse<Message>>("/communications/messages/"),
     get: (id: string) => api.get<Message>(`/communications/messages/${id}/`),
-    send: (data: { receiver: string; subject: string; body: string }) =>
+    send: (data: { receiver: string; subject: string; body: string } | FormData) =>
         api.post<Message>("/communications/messages/", data),
 };
 

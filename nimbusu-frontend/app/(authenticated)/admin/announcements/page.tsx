@@ -43,6 +43,7 @@ import {
   ChevronDown,
   X,
   Pencil,
+  Paperclip,
 } from "lucide-react";
 
 const DEBOUNCE_MS = 400;
@@ -63,6 +64,7 @@ export default function AdminAnnouncementsPage() {
     is_urgent: false,
     target_type: "all",
   });
+  const [files, setFiles] = useState<File[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -113,6 +115,7 @@ export default function AdminAnnouncementsPage() {
   function openCreate() {
     setEditId(null);
     setForm({ title: "", body: "", is_urgent: false, target_type: "all" });
+    setFiles([]);
     setSheetOpen(true);
   }
 
@@ -131,20 +134,23 @@ export default function AdminAnnouncementsPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("body", form.body);
+      formData.append("is_urgent", String(form.is_urgent));
+      formData.append("target_type", form.target_type);
+      files.forEach((f) => formData.append("attachments", f));
+
       if (editId) {
-        await announcementsService.update(
-          editId,
-          form as unknown as Parameters<typeof announcementsService.update>[1],
-        );
+        await announcementsService.update(editId, formData);
         toast.success("Announcement updated");
       } else {
-        await announcementsService.create(
-          form as unknown as Parameters<typeof announcementsService.create>[0],
-        );
+        await announcementsService.create(formData);
         toast.success("Announcement created");
       }
       setSheetOpen(false);
       setForm({ title: "", body: "", is_urgent: false, target_type: "all" });
+      setFiles([]);
       setEditId(null);
       fetchItems();
     } catch {
@@ -311,6 +317,9 @@ export default function AdminAnnouncementsPage() {
                               style={{ color: "var(--primary)" }}
                             />
                             {a.title}
+                            {a.attachments && a.attachments.length > 0 && (
+                              <Paperclip className="h-3 w-3 text-muted-foreground" />
+                            )}
                           </Table.Cell>
                           <Table.Cell className="text-muted-foreground">
                             {a.created_by_name}
@@ -401,6 +410,14 @@ export default function AdminAnnouncementsPage() {
                 onCheckedChange={(v) => setForm({ ...form, is_urgent: !!v })}
               />
               <Label htmlFor="urgent">Mark as urgent</Label>
+            </div>
+            <div className="space-y-2">
+              <Label>Attachments (Optional)</Label>
+              <Input
+                type="file"
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
+              />
             </div>
             <SheetFooter>
               <Button type="submit" disabled={saving} className="w-full">
