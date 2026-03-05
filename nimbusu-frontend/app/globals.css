@@ -297,3 +297,166 @@
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
+/* ─── Global Animation Styles ───────────────────────────────────────── */
+html[data-animation-disabled="true"] *,
+html[data-animation-disabled="true"] *::before,
+html[data-animation-disabled="true"] *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
+}
+
+[data-animation="liquid"] * {
+    --transition-behavior: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-animation="fluid"] * {
+    --transition-behavior: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-animation="organic"] * {
+    --transition-behavior: cubic-bezier(0.5, 1.5, 0.4, 0.9);
+}
+
+[data-animation="glitch"] * {
+    --transition-behavior: steps(3, end);
+}
+
+[data-animation="morph"] * {
+    --transition-behavior: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+html[data-animation] * {
+    transition-timing-function: var(--transition-behavior, ease) !important;
+}
+
+/* Override shadcn animate-in and animate-out */
+[data-animation="liquid"] .animate-in,
+[data-animation="liquid"] .animate-out {
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+[data-animation="fluid"] .animate-in,
+[data-animation="fluid"] .animate-out {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-animation="organic"] .animate-in,
+[data-animation="organic"] .animate-out {
+    animation-timing-function: cubic-bezier(0.5, 1.5, 0.4, 0.9) !important;
+}
+
+[data-animation="morph"] .animate-in,
+[data-animation="morph"] .animate-out {
+    animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+}
+
+[data-animation="glitch"] .animate-in,
+[data-animation="glitch"] .animate-out {
+    animation-timing-function: steps(3, end) !important;
+}
+
+/* Custom enter animations for shadcn popups/dialogs depending on style */
+@keyframes glitch-anim {
+    0% {
+        transform: translate(2px, 2px) scale(0.98);
+        opacity: 0.5;
+        filter: hue-rotate(90deg);
+    }
+
+    30% {
+        transform: translate(-2px, -2px) scale(1.02);
+        opacity: 1;
+        filter: invert(0.2);
+    }
+
+    60% {
+        transform: translate(2px, -2px) scale(0.99);
+        filter: blur(2px);
+    }
+
+    100% {
+        transform: translate(0) scale(1);
+        filter: none;
+    }
+}
+
+[data-animation="glitch"] .animate-in {
+    animation-name: enter, glitch-anim !important;
+    animation-duration: 0.3s !important;
+}
+
+@keyframes liquid-anim {
+    0% {
+        transform: scale(0.95) skewX(2deg);
+        filter: blur(4px);
+    }
+
+    50% {
+        transform: scale(1.02) skewX(-2deg);
+        filter: blur(1px);
+    }
+
+    100% {
+        transform: scale(1) skewX(0);
+        filter: blur(0);
+    }
+}
+
+[data-animation="liquid"] .animate-in {
+    animation-name: enter, liquid-anim !important;
+}
+
+@keyframes morph-anim {
+    0% {
+        border-radius: 50%;
+        transform: scale(0.8) rotate(-5deg);
+    }
+
+    100% {
+        border-radius: var(--radius);
+        transform: scale(1) rotate(0);
+    }
+}
+
+[data-animation="morph"] .animate-in {
+    animation-name: enter, morph-anim !important;
+}
+
+@keyframes organic-anim {
+    0% {
+        transform: scale3d(0.9, 1.1, 1);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale3d(1.05, 0.95, 1);
+    }
+
+    100% {
+        transform: scale3d(1, 1, 1);
+        opacity: 1;
+    }
+}
+
+[data-animation="organic"] .animate-in {
+    animation-name: enter, organic-anim !important;
+}
+
+@keyframes fluid-anim {
+    0% {
+        transform: translateY(10px) scaleY(1.1);
+        filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.1));
+    }
+
+    100% {
+        transform: translateY(0) scaleY(1);
+        filter: none;
+    }
+}
+
+[data-animation="fluid"] .animate-in {
+    animation-name: enter, fluid-anim !important;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "next-themes";
+import { MotionGlobalConfig } from "framer-motion";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { CustomRange } from "@/components/ui/custom-range";
 import { CustomStepper } from "@/components/ui/custom-stepper";
@@ -562,6 +563,15 @@ const BORDER_STYLE_OPTIONS: SelectOption[] = [
   { value: "outset", label: "Outset" },
 ];
 
+const ANIMATION_STYLE_OPTIONS: SelectOption[] = [
+  { value: "normal", label: "Normal" },
+  { value: "liquid", label: "Liquid Glass" },
+  { value: "morph", label: "Morph" },
+  { value: "fluid", label: "Fluid" },
+  { value: "organic", label: "Organic" },
+  { value: "glitch", label: "Glitch" },
+];
+
 const PRESET_OPTIONS: SelectOption[] = COLOR_PRESETS.map((p) => ({
   value: p.name,
   label: p.name,
@@ -604,6 +614,7 @@ export function SettingsPopup() {
   const [headingSize, setHeadingSize] = useState(24);
   const [spacing, setSpacing] = useState(4);
   const [animations, setAnimations] = useState(true);
+  const [animationStyle, setAnimationStyle] = useState("normal");
   const [roundCorners, setRoundCorners] = useState(true);
   const [radius, setRadius] = useState(10);
   const [shadow, setShadow] = useState(50);
@@ -642,6 +653,11 @@ export function SettingsPopup() {
       setBlur(parseInt(getCss("--blur-md")) || 8);
       setBorderStyle(getCss("--border-style") || "solid");
       setBorderWidth(parseInt(getCss("--border-width")) || 1);
+      setAnimationStyle(document.documentElement.getAttribute("data-animation") || "normal");
+
+      const animDisabled = document.documentElement.getAttribute("data-animation-disabled") === "true";
+      setAnimations(!animDisabled);
+      MotionGlobalConfig.skipAnimations = animDisabled;
 
       const currentFont = getCss("--font-sans");
       if (currentFont.includes("Press Start 2P")) {
@@ -732,8 +748,23 @@ export function SettingsPopup() {
 
   function onAnimationsChange(v: boolean) {
     setAnimations(v);
-    if (!v) setCss("--transition-normal", "0ms");
-    else setCss("--transition-normal", `${transition}ms`);
+    MotionGlobalConfig.skipAnimations = !v;
+    if (!v) {
+      setCss("--transition-normal", "0ms");
+      document.documentElement.setAttribute("data-animation-disabled", "true");
+    } else {
+      setCss("--transition-normal", `${transition}ms`);
+      document.documentElement.removeAttribute("data-animation-disabled");
+    }
+  }
+
+  function onAnimationStyleChange(v: string) {
+    setAnimationStyle(v);
+    if (v === "normal") {
+      document.documentElement.removeAttribute("data-animation");
+    } else {
+      document.documentElement.setAttribute("data-animation", v);
+    }
   }
 
   function onRoundCornersChange(v: boolean) {
@@ -843,6 +874,7 @@ export function SettingsPopup() {
     | "headingSize"
     | "spacing"
     | "animations"
+    | "animationStyle"
     | "roundCorners"
     | "radius"
     | "shadow"
@@ -858,6 +890,7 @@ export function SettingsPopup() {
     headingSize: ["heading title size"],
     spacing: ["spacing padding margin gap"],
     animations: ["animations transitions motion"],
+    animationStyle: ["animation style liquid glass morph fluid organic glitch"],
     roundCorners: ["round corners border"],
     radius: ["border radius rounding"],
     shadow: ["shadow depth intensity"],
@@ -896,11 +929,19 @@ export function SettingsPopup() {
       actions={
         <button
           onClick={resetAll}
-          className="p-1 rounded hover:bg-accent/50 text-muted-foreground"
+          className="p-1 rounded transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           title="Reset to defaults"
         >
           <RotateCcw className="h-4 w-4" />
         </button>
+      }
+      footer={
+        <div className="hidden sm:block px-4 py-2 text-xs text-muted-foreground text-center bg-muted/20">
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Up</kbd>{" "}
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Down</kbd> to navigate{" · "}
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> to use{" · "}
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Escape</kbd> to dismiss
+        </div>
       }
     >
       {/* ── Scrollable body ── */}
@@ -1036,6 +1077,18 @@ export function SettingsPopup() {
           </Row>
         )}
 
+        {/* Animation Style — Select */}
+        {visible("animationStyle") && (
+          <Row label="Animation Style" desc="Global animation style for the whole app">
+            <CustomSelect
+              value={animationStyle}
+              options={ANIMATION_STYLE_OPTIONS}
+              onChange={onAnimationStyleChange}
+              placeholder="Choose style"
+            />
+          </Row>
+        )}
+
         {/* Round Corners — Toggle */}
         {visible("roundCorners") && (
           <Row
@@ -1134,17 +1187,6 @@ export function SettingsPopup() {
             />
           </Row>
         )}
-      </div>
-
-      {/* ── Footer ── */}
-      <div
-        className="hidden sm:block px-4 py-2 border-t mt-4 text-xs text-muted-foreground text-center"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Up</kbd>{" "}
-        <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Down</kbd> to navigate{" · "}
-        <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> to use{" · "}
-        <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">Escape</kbd> to dismiss
       </div>
     </CustomModal>
   );

@@ -78,7 +78,7 @@ export function CustomStepper({ value, min, max, step = 1, onChange }: CustomSte
                 disabled={value <= min}
                 tabIndex={-1}
                 aria-label="Decrease"
-                className="px-2.5 py-1 text-base font-bold transition-colors hover:bg-accent/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-2.5 py-1 text-base font-bold transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{ borderRight: "1px solid var(--border)" }}
             >
                 −
@@ -94,7 +94,7 @@ export function CustomStepper({ value, min, max, step = 1, onChange }: CustomSte
                 disabled={value >= max}
                 tabIndex={-1}
                 aria-label="Increase"
-                className="px-2.5 py-1 text-base font-bold transition-colors hover:bg-accent/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-2.5 py-1 text-base font-bold transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{ borderLeft: "1px solid var(--border)" }}
             >
                 +

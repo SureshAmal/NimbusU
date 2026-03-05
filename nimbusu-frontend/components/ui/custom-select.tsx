@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* ═══════════════════════════════════════════════════════════════════
    CustomSelect — Accessible dropdown with keyboard navigation
@@ -23,6 +24,7 @@ interface CustomSelectProps {
 }
 
 export function CustomSelect({ value, options, onChange, placeholder }: CustomSelectProps) {
+    const id = useId();
     const [open, setOpen] = useState(false);
     const [focusIdx, setFocusIdx] = useState(-1);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -112,9 +114,10 @@ export function CustomSelect({ value, options, onChange, placeholder }: CustomSe
     );
 
     // Position dropdown below trigger, or above if no space
-    const [pos, setPos] = useState({ top: 0, left: 0, width: 0, direction: "down" as "up" | "down" });
-    useEffect(() => {
-        if (!open || !triggerRef.current) return;
+    const [pos, setPos] = useState({ top: 0, left: 0, width: 0, direction: "down" as "up" | "down", ready: false });
+
+    const updatePosition = useCallback(() => {
+        if (!triggerRef.current) return;
         const rect = triggerRef.current.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
         const dropdownMaxHeight = 240; // Max height defined in the style
@@ -138,9 +141,19 @@ export function CustomSelect({ value, options, onChange, placeholder }: CustomSe
             top,
             left: rect.right - Math.max(rect.width, 190),
             width: Math.max(rect.width, 190),
-            direction
+            direction,
+            ready: true
         });
-    }, [open]);
+    }, []);
+
+    useEffect(() => {
+        if (open) {
+            updatePosition();
+            // Recalculate position on resize/scroll could go here
+        } else {
+            setPos(p => ({ ...p, ready: false }));
+        }
+    }, [open, updatePosition]);
 
     return (
         <>
@@ -171,93 +184,106 @@ export function CustomSelect({ value, options, onChange, placeholder }: CustomSe
             </button>
 
             {/* Dropdown — single scrollable container, no double scroll */}
-            {open &&
-                createPortal(
-                    <div
-                        ref={listRef}
-                        role="listbox"
-                        aria-activedescendant={focusIdx >= 0 ? `select-opt-${focusIdx}` : undefined}
-                        onKeyDown={onKeyDown}
-                        className="fixed z-[10001] py-1 select-dropdown"
-                        style={{
-                            ...(pos.direction === "down"
-                                ? { top: pos.top }
-                                : { bottom: window.innerHeight - pos.top }),
-                            left: pos.left,
-                            width: pos.width,
-                            maxHeight: "240px",
-                            overflowY: "auto",
-                            borderRadius: "var(--radius-xl, 12px)",
-                            background: "var(--popover)",
-                            border: "1px solid var(--border)",
-                            boxShadow: pos.direction === "down"
-                                ? "0 8px 32px oklch(0 0 0 / 30%)"
-                                : "0 -8px 32px oklch(0 0 0 / 30%)",
-                            scrollbarWidth: "thin",
-                            scrollbarColor: "var(--primary) transparent",
-                        }}
-                    >
-                        {options.map((opt, i) => {
-                            const active = opt.value === value;
-                            const focused = i === focusIdx;
-                            return (
-                                <button
-                                    key={opt.value}
-                                    ref={(el) => { itemRefs.current[i] = el; }}
-                                    id={`select-opt-${i}`}
-                                    role="option"
-                                    aria-selected={active}
-                                    tabIndex={-1}
-                                    onClick={() => {
-                                        onChange(opt.value);
-                                        setOpen(false);
-                                        triggerRef.current?.focus();
-                                    }}
-                                    onMouseEnter={() => setFocusIdx(i)}
-                                    onMouseLeave={() => { if (!active) setFocusIdx(-1); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm outline-none"
-                                    style={{
-                                        background: focused || active ? "oklch(from var(--primary) l c h / 15%)" : "transparent",
-                                        color: "var(--popover-foreground)",
-                                        transition: "background 100ms ease",
-                                    }}
-                                >
-                                    {/* Color dot */}
-                                    {opt.dot && (
-                                        <span
-                                            className="h-4 w-4 rounded-full shrink-0"
-                                            style={{
-                                                background: opt.dot,
-                                                boxShadow: "inset 0 0 0 1px oklch(0 0 0 / 10%)",
-                                            }}
-                                        />
-                                    )}
-                                    {/* Icon */}
-                                    {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-                                    {/* Label */}
-                                    <span className="flex-1 text-left" style={{ fontFamily: opt.dot ? undefined : opt.value }}>
-                                        {opt.label}
-                                    </span>
-                                    {/* Radio circle */}
-                                    <span
-                                        className="h-[16px] w-[16px] rounded-full border-2 flex items-center justify-center shrink-0"
+            {createPortal(
+                <AnimatePresence>
+                    {open && pos.ready && (
+                        <motion.div
+                            ref={listRef as React.Ref<HTMLDivElement>}
+                            role="listbox"
+                            aria-activedescendant={focusIdx >= 0 ? `select-opt-${focusIdx}` : undefined}
+                            onKeyDown={onKeyDown}
+                            className="fixed z-[10001] py-1 select-dropdown"
+                            initial={{ opacity: 0, y: pos.direction === "down" ? -10 : 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                                ...(pos.direction === "down"
+                                    ? { top: pos.top }
+                                    : { bottom: window.innerHeight - pos.top }),
+                                left: pos.left,
+                                width: pos.width,
+                                maxHeight: "240px",
+                                overflowY: "auto",
+                                borderRadius: "var(--radius-xl, 12px)",
+                                background: "var(--popover)",
+                                border: "1px solid var(--border)",
+                                boxShadow: pos.direction === "down"
+                                    ? "0 8px 32px oklch(0 0 0 / 30%)"
+                                    : "0 -8px 32px oklch(0 0 0 / 30%)",
+                                scrollbarWidth: "thin",
+                                scrollbarColor: "var(--primary) transparent",
+                            }}
+                        >
+                            {options.map((opt, i) => {
+                                const active = opt.value === value;
+                                const focused = i === focusIdx;
+                                return (
+                                    <motion.button
+                                        key={opt.value}
+                                        ref={(el) => { itemRefs.current[i] = el; }}
+                                        id={`select-opt-${i}`}
+                                        role="option"
+                                        aria-selected={active}
+                                        tabIndex={-1}
+                                        onClick={() => {
+                                            onChange(opt.value);
+                                            setOpen(false);
+                                            triggerRef.current?.focus();
+                                        }}
+                                        onMouseEnter={() => setFocusIdx(i)}
+                                        onMouseLeave={() => { if (!active) setFocusIdx(-1); }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm outline-none overflow-hidden"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: i * 0.02, duration: 0.15 }}
                                         style={{
-                                            borderColor: active ? "var(--primary)" : "var(--border)",
+                                            background: focused || active ? "oklch(from var(--primary) l c h / 15%)" : "transparent",
+                                            color: "var(--popover-foreground)",
                                         }}
                                     >
-                                        {active && (
+                                        {/* Color dot */}
+                                        {opt.dot && (
                                             <span
-                                                className="h-[8px] w-[8px] rounded-full"
-                                                style={{ background: "var(--primary)" }}
+                                                className="h-4 w-4 rounded-full shrink-0"
+                                                style={{
+                                                    background: opt.dot,
+                                                    boxShadow: "inset 0 0 0 1px oklch(0 0 0 / 10%)",
+                                                }}
                                             />
                                         )}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>,
-                    document.body
-                )}
+                                        {/* Icon */}
+                                        {opt.icon && <span className="shrink-0">{opt.icon}</span>}
+                                        {/* Label */}
+                                        <span className="flex-1 text-left" style={{ fontFamily: opt.dot ? undefined : opt.value }}>
+                                            {opt.label}
+                                        </span>
+                                        {/* Radio circle */}
+                                        <span
+                                            className="h-[16px] w-[16px] rounded-full border-2 flex items-center justify-center shrink-0"
+                                            style={{
+                                                borderColor: active ? "var(--primary)" : "var(--border)",
+                                            }}
+                                        >
+                                            {active && (
+                                                <motion.span
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    exit={{ scale: 0 }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                    className="h-[8px] w-[8px] rounded-full"
+                                                    style={{ background: "var(--primary)" }}
+                                                />
+                                            )}
+                                        </span>
+                                    </motion.button>
+                                );
+                            })}
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 }
