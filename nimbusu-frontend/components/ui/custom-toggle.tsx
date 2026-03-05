@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { motion } from "framer-motion";
 
 /* ═══════════════════════════════════════════════════════════════════
    CustomToggle — Accessible switch with checkmark
@@ -36,16 +37,27 @@ export function CustomToggle({ checked, onChange, label }: CustomToggleProps) {
             }}
         >
             {/* Sliding knob */}
-            <span
-                className="absolute top-[3px] left-[3px] h-[22px] w-[22px] bg-white shadow-sm transition-transform duration-200 flex items-center justify-center"
+            <motion.span
+                layout
+                initial={false}
+                animate={{ x: checked ? 22 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute top-[3px] left-[3px] h-[22px] w-[22px] bg-white shadow-sm flex items-center justify-center"
                 style={{
                     borderRadius: "var(--radius-lg, 9999px)",
-                    transform: checked ? "translateX(22px)" : "translateX(0)",
                     boxShadow: "0 1px 3px oklch(0 0 0 / 20%)",
                 }}
             >
-                {checked && <Check className="h-3 w-3" style={{ color: "var(--primary)" }} />}
-            </span>
+                {checked && (
+                    <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.15 }}
+                    >
+                        <Check className="h-3 w-3" style={{ color: "var(--primary)" }} />
+                    </motion.div>
+                )}
+            </motion.span>
         </button>
     );
 }

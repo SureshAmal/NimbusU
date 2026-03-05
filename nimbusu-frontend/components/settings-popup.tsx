@@ -556,6 +556,10 @@ const BORDER_STYLE_OPTIONS: SelectOption[] = [
   { value: "dashed", label: "Dashed" },
   { value: "dotted", label: "Dotted" },
   { value: "double", label: "Double" },
+  { value: "groove", label: "Groove" },
+  { value: "ridge", label: "Ridge" },
+  { value: "inset", label: "Inset" },
+  { value: "outset", label: "Outset" },
 ];
 
 const PRESET_OPTIONS: SelectOption[] = COLOR_PRESETS.map((p) => ({
@@ -606,6 +610,7 @@ export function SettingsPopup() {
   const [blur, setBlur] = useState(8);
   const [transition, setTransition] = useState(250);
   const [borderStyle, setBorderStyle] = useState("solid");
+  const [borderWidth, setBorderWidth] = useState(1);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -636,6 +641,7 @@ export function SettingsPopup() {
       setRadius(r ? Math.round(r * 16) : 10);
       setBlur(parseInt(getCss("--blur-md")) || 8);
       setBorderStyle(getCss("--border-style") || "solid");
+      setBorderWidth(parseInt(getCss("--border-width")) || 1);
 
       const currentFont = getCss("--font-sans");
       if (currentFont.includes("Press Start 2P")) {
@@ -710,6 +716,11 @@ export function SettingsPopup() {
   function onBorderStyleChange(v: string) {
     setBorderStyle(v);
     setCss("--border-style", v);
+  }
+
+  function onBorderWidthChange(v: number) {
+    setBorderWidth(v);
+    setCss("--border-width", `${v}px`);
   }
 
   function onTransitionChange(v: number) {
@@ -837,7 +848,8 @@ export function SettingsPopup() {
     | "shadow"
     | "blur"
     | "transition"
-    | "borderStyle";
+    | "borderStyle"
+    | "borderWidth";
   const sectionLabels: Record<SectionKey, string[]> = {
     scheme: ["color scheme light dark system theme"],
     accent: ["accent color primary"],
@@ -851,7 +863,8 @@ export function SettingsPopup() {
     shadow: ["shadow depth intensity"],
     blur: ["backdrop blur glass"],
     transition: ["transition speed duration"],
-    borderStyle: ["border style dashed dotted double solid"],
+    borderStyle: ["border style dashed dotted double solid groove ridge inset outset"],
+    borderWidth: ["border width thickness size amount pixel px"],
   };
 
   function visible(key: SectionKey) {
@@ -896,15 +909,6 @@ export function SettingsPopup() {
                   .settings-scroll::-webkit-scrollbar-track { background: transparent; }
                   .settings-scroll::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 999px; }
                   .settings-scroll::-webkit-scrollbar-thumb:hover { background: var(--ring); }
-                  :root {
-                    --border-style: solid;
-                  }
-                  *:not(.border-none) {
-                    border-style: var(--border-style, solid) !important;
-                  }
-                  path, svg, g {
-                    border-style: none !important;
-                  }
                 `}</style>
       <div
         className="flex-1 overflow-y-auto settings-scroll"
@@ -1069,6 +1073,19 @@ export function SettingsPopup() {
               options={BORDER_STYLE_OPTIONS}
               onChange={onBorderStyleChange}
               placeholder="Choose border style"
+            />
+          </Row>
+        )}
+
+        {/* Border Width — Stepper */}
+        {visible("borderWidth") && (
+          <Row label="Border Width" desc="Width of borders (useful for 3D styles)">
+            <CustomStepper
+              value={borderWidth}
+              min={0}
+              max={8}
+              step={1}
+              onChange={onBorderWidthChange}
             />
           </Row>
         )}

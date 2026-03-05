@@ -82,7 +82,7 @@ export default function AdminSchoolsPage() {
         ...(headRes.data.results ?? []),
         ...(adminRes.data.results ?? []),
       ]);
-    } catch { }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -146,13 +146,7 @@ export default function AdminSchoolsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Schools</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage university schools
-          </p>
-        </div>
+      <div>
         <Button onClick={openCreate} style={{ borderRadius: "var(--radius)" }}>
           <Plus className="h-4 w-4 mr-2" /> Add School
         </Button>

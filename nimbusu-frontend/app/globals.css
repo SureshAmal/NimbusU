@@ -194,10 +194,52 @@
 @layer base {
     :root {
         --font-scale: 1;
+        --border-style: solid;
     }
 
     * {
         @apply border-border outline-ring/50;
+    }
+
+    *:not(.border-none) {
+        border-style: var(--border-style) !important;
+    }
+
+    path,
+    svg,
+    g {
+        border-style: none !important;
+    }
+
+    /* Target elements with border classes to apply custom border width */
+    .border {
+        border-width: var(--border-width, 1px) !important;
+    }
+
+    .border-t {
+        border-top-width: var(--border-width, 1px) !important;
+    }
+
+    .border-b {
+        border-bottom-width: var(--border-width, 1px) !important;
+    }
+
+    .border-l {
+        border-left-width: var(--border-width, 1px) !important;
+    }
+
+    .border-r {
+        border-right-width: var(--border-width, 1px) !important;
+    }
+
+    .border-x {
+        border-left-width: var(--border-width, 1px) !important;
+        border-right-width: var(--border-width, 1px) !important;
+    }
+
+    .border-y {
+        border-top-width: var(--border-width, 1px) !important;
+        border-bottom-width: var(--border-width, 1px) !important;
     }
 
     body {

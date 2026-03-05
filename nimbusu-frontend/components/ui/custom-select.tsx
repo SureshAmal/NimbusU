@@ -111,15 +111,34 @@ export function CustomSelect({ value, options, onChange, placeholder }: CustomSe
         [open, focusIdx, options, onChange]
     );
 
-    // Position dropdown below trigger
-    const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+    // Position dropdown below trigger, or above if no space
+    const [pos, setPos] = useState({ top: 0, left: 0, width: 0, direction: "down" as "up" | "down" });
     useEffect(() => {
         if (!open || !triggerRef.current) return;
         const rect = triggerRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const dropdownMaxHeight = 240; // Max height defined in the style
+
+        // Check if there is enough space below
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        let direction: "up" | "down" = "down";
+        let top = rect.bottom + 4;
+
+        if (spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow) {
+            direction = "up";
+            // We'll calculate the actual top position during rendering using bottom constraint,
+            // or we can set top to a rough estimate for absolute positioning.
+            // Using a specific `bottom` style is safer for "up" direction, so `top` here is unused in that case.
+            top = rect.top - 4; // Used to anchor the bottom of the dropdown
+        }
+
         setPos({
-            top: rect.bottom + 4,
+            top,
             left: rect.right - Math.max(rect.width, 190),
             width: Math.max(rect.width, 190),
+            direction
         });
     }, [open]);
 
@@ -161,7 +180,9 @@ export function CustomSelect({ value, options, onChange, placeholder }: CustomSe
                         onKeyDown={onKeyDown}
                         className="fixed z-[10001] py-1 select-dropdown"
                         style={{
-                            top: pos.top,
+                            ...(pos.direction === "down"
+                                ? { top: pos.top }
+                                : { bottom: window.innerHeight - pos.top }),
                             left: pos.left,
                             width: pos.width,
                             maxHeight: "240px",
@@ -169,7 +190,9 @@ export function CustomSelect({ value, options, onChange, placeholder }: CustomSe
                             borderRadius: "var(--radius-xl, 12px)",
                             background: "var(--popover)",
                             border: "1px solid var(--border)",
-                            boxShadow: "0 8px 32px oklch(0 0 0 / 30%)",
+                            boxShadow: pos.direction === "down"
+                                ? "0 8px 32px oklch(0 0 0 / 30%)"
+                                : "0 -8px 32px oklch(0 0 0 / 30%)",
                             scrollbarWidth: "thin",
                             scrollbarColor: "var(--primary) transparent",
                         }}

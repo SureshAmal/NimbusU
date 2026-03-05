@@ -84,7 +84,7 @@ export default function AdminDepartmentsPage() {
     try {
       const { data } = await schoolsService.list();
       setSchools(data.results ?? []);
-    } catch { }
+    } catch {}
   }, []);
 
   const fetchFaculty = useCallback(async () => {
@@ -99,7 +99,7 @@ export default function AdminDepartmentsPage() {
         ...(headRes.data.results ?? []),
         ...(adminRes.data.results ?? []),
       ]);
-    } catch { }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -175,13 +175,7 @@ export default function AdminDepartmentsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Departments</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage university departments
-          </p>
-        </div>
+      <div>
         <Button onClick={openCreate} style={{ borderRadius: "var(--radius)" }}>
           <Plus className="h-4 w-4 mr-2" /> Add Department
         </Button>

@@ -113,7 +113,8 @@ export default function AdminAcademicsPage() {
 
   // Bulk Upload Enrollments logic
   const [enrollmentsUploadOpen, setEnrollmentsUploadOpen] = useState(false);
-  const [enrollmentsUploadFile, setEnrollmentsUploadFile] = useState<File | null>(null);
+  const [enrollmentsUploadFile, setEnrollmentsUploadFile] =
+    useState<File | null>(null);
   const [enrollmentsUploading, setEnrollmentsUploading] = useState(false);
 
   const fetchAll = useCallback(async (opts?: { showLoading?: boolean }) => {
@@ -327,7 +328,10 @@ export default function AdminAcademicsPage() {
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `enrollments_export_${new Date().toISOString().split("T")[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `enrollments_export_${new Date().toISOString().split("T")[0]}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -372,15 +376,6 @@ export default function AdminAcademicsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Academic Management
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Manage semesters, courses, and offerings
-        </p>
-      </div>
-
       <Tabs defaultValue="semesters">
         <TabsList>
           <TabsTrigger value="semesters">
@@ -683,7 +678,10 @@ export default function AdminAcademicsPage() {
                       size="sm"
                       className="h-8 gap-1"
                       variant="outline"
-                      onClick={() => { setEnrollmentsUploadFile(null); setEnrollmentsUploadOpen(true); }}
+                      onClick={() => {
+                        setEnrollmentsUploadFile(null);
+                        setEnrollmentsUploadOpen(true);
+                      }}
                     >
                       <Upload className="h-3.5 w-3.5" /> Bulk Enroll
                     </Button>
@@ -1059,7 +1057,10 @@ export default function AdminAcademicsPage() {
       </Sheet>
 
       {/* Bulk Upload Dialog */}
-      <Dialog open={enrollmentsUploadOpen} onOpenChange={setEnrollmentsUploadOpen}>
+      <Dialog
+        open={enrollmentsUploadOpen}
+        onOpenChange={setEnrollmentsUploadOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Bulk Enroll Students</DialogTitle>
@@ -1073,16 +1074,28 @@ export default function AdminAcademicsPage() {
               <Input
                 type="file"
                 accept=".json,.csv"
-                onChange={(e) => setEnrollmentsUploadFile(e.target.files?.[0] || null)}
+                onChange={(e) =>
+                  setEnrollmentsUploadFile(e.target.files?.[0] || null)
+                }
                 required
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setEnrollmentsUploadOpen(false)} disabled={enrollmentsUploading}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setEnrollmentsUploadOpen(false)}
+                disabled={enrollmentsUploading}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={!enrollmentsUploadFile || enrollmentsUploading}>
-                {enrollmentsUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button
+                type="submit"
+                disabled={!enrollmentsUploadFile || enrollmentsUploading}
+              >
+                {enrollmentsUploading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Upload
               </Button>
             </DialogFooter>

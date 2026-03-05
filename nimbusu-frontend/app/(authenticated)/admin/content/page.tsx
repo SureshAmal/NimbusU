@@ -156,13 +156,6 @@ export default function AdminContentPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Content Oversight</h1>
-        <p className="text-muted-foreground text-sm">
-          Monitor all uploaded content across the platform
-        </p>
-      </div>
-
       <ContextMenu
         onOpenChange={(open) => {
           if (!open) setCtxItem(null);
