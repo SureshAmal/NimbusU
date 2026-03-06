@@ -60,8 +60,12 @@ export default function StudentBookmarksPage() {
     const timer = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const { data } = await contentService.search(search);
-        setSearchResults(data);
+        const res = await contentService.search(search);
+        if (res.data?.status === "success" && res.data?.data) {
+          setSearchResults(res.data.data);
+        } else {
+          setSearchResults({ courses: [], content: [], users: [] });
+        }
       } catch {
         toast.error("Failed to perform search");
       } finally {

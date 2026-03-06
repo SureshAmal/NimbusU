@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { usePageHeader } from "@/lib/page-header";
+import { GlobalSearch } from "./global-search";
 
 /** Derive a human-readable title from a URL path, e.g. "/admin/audit-logs" → "Audit Logs" */
 function titleFromPath(pathname: string): string {
@@ -95,7 +96,7 @@ export function AppHeader() {
           </Button>
         </Link>
       )}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex items-center gap-4">
         <div className="flex items-baseline gap-2">
           <h1 className="text-sm font-semibold truncate">{displayTitle}</h1>
           {displaySubtitle && (
@@ -103,6 +104,11 @@ export function AppHeader() {
               {displaySubtitle}
             </span>
           )}
+        </div>
+
+        {/* Global Search */}
+        <div className="hidden md:flex ml-auto mr-2">
+          <GlobalSearch />
         </div>
       </div>
 
