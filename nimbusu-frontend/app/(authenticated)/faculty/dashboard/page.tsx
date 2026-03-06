@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { assignmentsService, attendanceService, offeringsService } from "@/services/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, Users, Target, AlertTriangle } from "lucide-react";
+import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, Users, Target, AlertTriangle, PartyPopper } from "lucide-react";
 import type { TimetableEntry, Assignment, CourseOffering } from "@/lib/types";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
@@ -268,7 +268,7 @@ export default function FacultyDashboardPage() {
                         <Badge variant="secondary" className="text-[10px]">{lowAttendanceAlerts.length} students</Badge>
                     </div>
                     {lowAttendanceAlerts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-8 text-center bg-emerald-500/10 rounded-lg text-emerald-600 mt-2">All students have good attendance 🎉</p>
+                        <p className="text-sm text-muted-foreground py-8 text-center bg-emerald-500/10 rounded-lg text-emerald-600 mt-2 flex items-center justify-center gap-2">All students have good attendance <PartyPopper className="h-4 w-4" /></p>
                     ) : (
                         <div className="space-y-2 mt-2">
                             {lowAttendanceAlerts.map((alert, i) => (

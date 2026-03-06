@@ -136,12 +136,17 @@ export default function AdminTimetablePage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Sheet state — single sheet for view + inline edit
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetEditing, setSheetEditing] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(
     null,
   );
+
+  // Advanced details
+  const [advancedDetailsDialogOpen, setAdvancedDetailsDialogOpen] = useState(false);
+  const [advancedDetails, setAdvancedDetails] = useState<any>(null);
+  const [roomDetailsDialogOpen, setRoomDetailsDialogOpen] = useState(false);
+  const [roomDetails, setRoomDetails] = useState<any>(null);
 
   // Create dialog (only for new entries)
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -320,6 +325,28 @@ export default function AdminTimetablePage() {
       toast.error("Failed to load conflicts");
     } finally {
       setLoadingConflicts(false);
+    }
+  };
+
+  const fetchEntryDetails = async () => {
+    if (!selectedEntry) return;
+    try {
+      const { data } = await timetableService.get(selectedEntry.id);
+      setAdvancedDetails(data);
+      setAdvancedDetailsDialogOpen(true);
+    } catch {
+      toast.error("Failed to load full entry details using timetableService.get");
+    }
+  };
+
+  const fetchRoomDetails = async () => {
+    if (!selectedEntry?.location) return;
+    try {
+      const { data } = await timetableService.rooms.get(selectedEntry.location);
+      setRoomDetails(data);
+      setRoomDetailsDialogOpen(true);
+    } catch {
+      toast.error("Failed to load room details using timetableService.rooms.get");
     }
   };
 
@@ -636,13 +663,18 @@ export default function AdminTimetablePage() {
                   </div>
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <div className="text-xs text-muted-foreground">
-                        Location
+                    <div className="flex-1 flex justify-between items-center pr-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Location
+                        </div>
+                        <div className="font-medium">
+                          {selectedEntry.location}
+                        </div>
                       </div>
-                      <div className="font-medium">
-                        {selectedEntry.location}
-                      </div>
+                      <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={fetchRoomDetails}>
+                        Room Info
+                      </Button>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -729,6 +761,13 @@ export default function AdminTimetablePage() {
               </div>
 
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={fetchEntryDetails}
+                >
+                  <BookOpen className="h-4 w-4" /> Entry Details
+                </Button>
                 <Button
                   variant="secondary"
                   className="flex-1 gap-2"
@@ -1013,6 +1052,30 @@ export default function AdminTimetablePage() {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Advanced Details View */}
+      <Dialog open={advancedDetailsDialogOpen} onOpenChange={setAdvancedDetailsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Raw Entry Details Output</DialogTitle>
+          </DialogHeader>
+          <div className="border rounded-md p-4 bg-muted/50 font-mono text-xs overflow-auto max-h-[400px]">
+            <pre>{JSON.stringify(advancedDetails, null, 2)}</pre>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Room Details View */}
+      <Dialog open={roomDetailsDialogOpen} onOpenChange={setRoomDetailsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Room Details</DialogTitle>
+          </DialogHeader>
+          <div className="border rounded-md p-4 bg-muted/50 font-mono text-xs overflow-auto max-h-[400px]">
+            <pre>{JSON.stringify(roomDetails, null, 2)}</pre>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

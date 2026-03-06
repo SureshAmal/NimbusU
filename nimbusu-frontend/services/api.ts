@@ -136,14 +136,14 @@ export const offeringsService = {
 
 export const enrollmentsService = {
     create: (data: { student: string; course_offering: string }) =>
-        api.post<Enrollment>("/enrollments/", data),
+        api.post<Enrollment>("/academics/enrollments/", data),
     mine: () =>
-        api.get<PaginatedResponse<Enrollment>>("/enrollments/me/"),
+        api.get<PaginatedResponse<Enrollment>>("/academics/enrollments/me/"),
     bulkCreate: (data: any) =>
-        api.post<{ status: string; message: string }>("/enrollments/bulk-create/", data),
+        api.post<{ status: string; message: string }>("/academics/enrollments/bulk-create/", data),
     export: (params?: Record<string, string>) =>
-        api.get<Blob>("/enrollments/export/", { params, responseType: "blob" }),
-    delete: (id: string) => api.delete(`/enrollments/${id}/`),
+        api.get<Blob>("/academics/enrollments/export/", { params, responseType: "blob" }),
+    delete: (id: string) => api.delete(`/academics/enrollments/${id}/`),
 };
 
 export const prerequisitesService = {
@@ -247,6 +247,7 @@ export const contentService = {
     folders: {
         list: (params?: Record<string, string>) =>
             api.get<PaginatedResponse<ContentFolder>>("/content/folders/", { params }),
+        get: (id: string) => api.get<ContentFolder>(`/content/folders/${id}/`),
         create: (data: Partial<ContentFolder>) =>
             api.post<ContentFolder>("/content/folders/", data),
         update: (id: string, data: Partial<ContentFolder>) =>
@@ -271,6 +272,7 @@ export const contentService = {
 export const timetableService = {
     list: (params?: Record<string, string>) =>
         api.get<PaginatedResponse<TimetableEntry>>("/timetable/", { params }),
+    get: (id: string) => api.get<TimetableEntry>(`/timetable/${id}/`),
     create: (data: Partial<TimetableEntry>) =>
         api.post<TimetableEntry>("/timetable/", data),
     update: (id: string, data: Partial<TimetableEntry>) =>
@@ -281,6 +283,7 @@ export const timetableService = {
     rooms: {
         list: (params?: Record<string, string>) =>
             api.get("/timetable/rooms/", { params }),
+        get: (id: string) => api.get(`/timetable/rooms/${id}/`),
         create: (data: Record<string, unknown>) =>
             api.post("/timetable/rooms/", data),
         update: (id: string, data: Record<string, unknown>) =>
@@ -369,6 +372,10 @@ export const forumsService = {
         api.post("/communications/forums/", data),
     createPost: (forumId: string, data: { body: string; parent?: string }) =>
         api.post(`/communications/forums/${forumId}/posts/`, data),
+    updatePost: (forumId: string, id: string, data: { body: string }) =>
+        api.patch(`/communications/forums/${forumId}/posts/${id}/`, data),
+    deletePost: (forumId: string, id: string) =>
+        api.delete(`/communications/forums/${forumId}/posts/${id}/delete/`),
 };
 
 /* ─── Notifications ───────────────────────────────────────────────── */
@@ -380,6 +387,8 @@ export const notificationsService = {
     markAllRead: () => api.post("/notifications/read-all/"),
     unreadCount: () => api.get("/notifications/unread-count/"),
     preferences: () => api.get("/notifications/preferences/"),
+    createPreference: (data: Record<string, boolean>) =>
+        api.post("/notifications/preferences/", data),
     updatePreference: (id: string, data: Record<string, boolean>) =>
         api.patch(`/notifications/preferences/${id}/`, data),
     adminStats: () => api.get("/notifications/admin/stats/"),
@@ -470,4 +479,10 @@ export const swapRequestsService = {
         api.post<TimetableSwapRequest>("/timetable/swap-requests/", data),
     respond: (id: string, action: "approve" | "reject") =>
         api.post(`/timetable/swap-requests/${id}/respond/`, { action }),
+};
+
+/* ─── Root ────────────────────────────────────────────────────────── */
+
+export const rootService = {
+    healthCheck: () => api.get("/"),
 };

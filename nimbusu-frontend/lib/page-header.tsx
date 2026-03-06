@@ -3,8 +3,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
 interface PageHeaderInfo {
-    title: string;
-    subtitle?: string;
+    title: string | ReactNode;
+    subtitle?: string | ReactNode;
     backUrl?: string;
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { usePageHeader } from "@/lib/page-header";
-import { adminService } from "@/services/api";
+import { adminService, rootService } from "@/services/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,6 +17,9 @@ import {
   TrendingUp,
   Clock,
   School,
+  CheckCircle,
+  XCircle,
+  Loader2,
 } from "lucide-react";
 import {
   PieChart,
@@ -202,6 +205,24 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // API Health status
+  const [apiHealth, setApiHealth] = useState<"checking" | "online" | "offline">("checking");
+  const [apiLatency, setApiLatency] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function checkHealth() {
+      try {
+        const start = Date.now();
+        await rootService.healthCheck();
+        setApiLatency(Date.now() - start);
+        setApiHealth("online");
+      } catch {
+        setApiHealth("offline");
+      }
+    }
+    checkHealth();
+  }, []);
+
   // Set header title in navbar
   useEffect(() => {
     const date = new Date().toLocaleDateString("en-US", {
@@ -210,12 +231,34 @@ export default function AdminDashboardPage() {
       day: "numeric",
       year: "numeric",
     });
+
+    // Add health badge alongside subtitles
+    const statusIcon =
+      apiHealth === "online" ? (
+        <span className="flex items-center gap-1 text-emerald-500">
+          <CheckCircle className="h-3.5 w-3.5" /> Online ({apiLatency}ms)
+        </span>
+      ) : apiHealth === "offline" ? (
+        <span className="flex items-center gap-1 text-red-500">
+          <XCircle className="h-3.5 w-3.5" /> Offline
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 text-amber-500">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking...
+        </span>
+      );
+
     setHeader({
       title: "Dashboard",
-      subtitle: `Welcome back, ${user?.first_name ?? ""} · ${date}`,
+      subtitle: (
+        <div className="flex items-center gap-1.5">
+          <span>Welcome back, {user?.first_name ?? ""} · {date} · API Status:</span>
+          {statusIcon}
+        </div>
+      ),
     });
     return () => setHeader(null);
-  }, [user?.first_name, setHeader]);
+  }, [user?.first_name, setHeader, apiHealth, apiLatency]);
 
   useEffect(() => {
     async function fetchStats() {

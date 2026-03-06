@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { assignmentsService, attendanceService } from "@/services/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, BarChart3, Target } from "lucide-react";
+import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, BarChart3, Target, PartyPopper } from "lucide-react";
 import type { TimetableEntry, Enrollment, Assignment } from "@/lib/types";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, PieChart, Pie, Cell } from "recharts";
 
@@ -236,7 +236,7 @@ export default function StudentDashboardPage() {
                         </div>
                     </div>
                     {todayClasses.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-8 text-center">No classes today 🎉</p>
+                        <p className="text-sm text-muted-foreground py-8 text-center flex items-center justify-center gap-2">No classes today <PartyPopper className="h-4 w-4" /></p>
                     ) : (
                         <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
                             {todayClasses.sort((a, b) => a.start_time.localeCompare(b.start_time)).map((entry, i) => (
@@ -263,7 +263,7 @@ export default function StudentDashboardPage() {
                         <Badge variant="secondary" className="text-[10px]">{upcoming.length} pending</Badge>
                     </div>
                     {upcoming.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-6 text-center">All caught up! 🎉</p>
+                        <p className="text-sm text-muted-foreground py-6 text-center flex items-center justify-center gap-2">All caught up! <PartyPopper className="h-4 w-4" /></p>
                     ) : (
                         <div className="space-y-0.5">
                             {upcoming.map((a) => {

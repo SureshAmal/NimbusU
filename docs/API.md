@@ -17,2248 +17,1778 @@
 
 ---
 
-## Authentication
-
-### Register User
-**POST** `/api/v1/auth/register/`
-
-Creates a new user account.
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | Yes | Valid email address |
-| password | string | Yes | Minimum 8 characters |
-| password_confirm | string | Yes | Must match password |
-| first_name | string | Yes | User's first name |
-| last_name | string | Yes | User's last name |
-| role | string | Yes | One of: `admin`, `faculty`, `student` |
-
-**Example Request:**
-```json
-{
-  "email": "john.doe@university.edu",
-  "password": "SecurePass123!",
-  "password_confirm": "SecurePass123!",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "student"
-}
-```
-
-**Example Response:** `201 Created`
-```json
-{
-  "status": "success",
-  "data": {
-    "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "email": "john.doe@university.edu",
-      "first_name": "John",
-      "last_name": "Doe",
-      "role": "student",
-      "department": null,
-      "department_name": null,
-      "profile_picture": null,
-      "phone": null,
-      "is_active": true,
-      "last_login": null,
-      "created_at": "2026-03-02T10:30:00Z",
-      "updated_at": "2026-03-02T10:30:00Z",
-      "student_profile": null,
-      "faculty_profile": null
-    },
-    "tokens": {
-      "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-      "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-    }
-  }
-}
-```
-
----
-
-### Login
-**POST** `/api/v1/auth/login/`
-
-Authenticates a user and returns JWT tokens.
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | Yes | User's email |
-| password | string | Yes | User's password |
-
-**Example Request:**
-```json
-{
-  "email": "john.doe@university.edu",
-  "password": "SecurePass123!"
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-}
-```
-
----
-
-### Refresh Token
-**POST** `/api/v1/auth/refresh/`
-
-Refreshes an access token using a refresh token.
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| refresh | string | Yes | Valid refresh token |
-
-**Example Request:**
-```json
-{
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-}
-```
-
----
-
-### Logout
-**POST** `/api/v1/auth/logout/`
-
-Blacklists the refresh token.
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| refresh | string | Yes | Refresh token to blacklist |
-
-**Example Request:**
-```json
-{
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "message": "Logged out."
-}
-```
-
----
-
-### Change Password
-**POST** `/api/v1/auth/password/change/`
-
-Changes the current user's password.
-
-**Authentication Required:** Yes
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| old_password | string | Yes | Current password |
-| new_password | string | Yes | New password (min 8 chars) |
-
-**Example Request:**
-```json
-{
-  "old_password": "OldPassword123!",
-  "new_password": "NewPassword456!"
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "message": "Password changed."
-}
-```
-
----
-
-## Users & Accounts
-
-### List Users
-**GET** `/api/v1/users/`
-
-Lists all users (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| role | string | Filter by role: `admin`, `faculty`, `student` |
-| department | UUID | Filter by department ID |
-| is_active | boolean | Filter by active status |
-| search | string | Search by email, first name, or last name |
-| ordering | string | Order by: `created_at`, `email`, `first_name` |
-
-**Example Request:**
-```
-GET /api/v1/users/?role=student&department=550e8400-e29b-41d4-a716-446655440000
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 50,
-  "next": "/api/v1/users/?page=2",
-  "previous": null,
-  "results": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "email": "john.doe@university.edu",
-      "first_name": "John",
-      "last_name": "Doe",
-      "role": "student",
-      "department": "650e8400-e29b-41d4-a716-446655440000",
-      "department_name": "Computer Science",
-      "phone": "+1234567890",
-      "is_active": true,
-      "last_login": "2026-03-02T09:15:00Z",
-      "created_at": "2026-01-15T10:30:00Z"
-    }
-  ]
-}
-```
-
----
-
-### Create User
-**POST** `/api/v1/users/`
-
-Creates a new user (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | Yes | Valid email address |
-| password | string | Yes | Minimum 8 characters |
-| first_name | string | Yes | User's first name |
-| last_name | string | Yes | User's last name |
-| role | string | Yes | One of: `admin`, `faculty`, `student` |
-| department | UUID | No | Department ID |
-| phone | string | No | Contact phone number |
-
-**Example Request:**
-```json
-{
-  "email": "jane.smith@university.edu",
-  "password": "SecurePass123!",
-  "first_name": "Jane",
-  "last_name": "Smith",
-  "role": "faculty",
-  "department": "650e8400-e29b-41d4-a716-446655440000",
-  "phone": "+1234567891"
-}
-```
-
-**Example Response:** `201 Created`
-```json
-{
-  "id": "760e8400-e29b-41d4-a716-446655440000",
-  "email": "jane.smith@university.edu",
-  "first_name": "Jane",
-  "last_name": "Smith",
-  "role": "faculty",
-  "department": "650e8400-e29b-41d4-a716-446655440000",
-  "phone": "+1234567891"
-}
-```
-
----
-
-### Get Current User
-**GET** `/api/v1/users/me/`
-
-Retrieves the authenticated user's profile.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "john.doe@university.edu",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "student",
-  "department": "650e8400-e29b-41d4-a716-446655440000",
-  "department_name": "Computer Science",
-  "profile_picture": "/media/avatars/john_doe.jpg",
-  "phone": "+1234567890",
-  "is_active": true,
-  "failed_login_attempts": 0,
-  "last_login": "2026-03-02T09:15:00Z",
-  "created_at": "2026-01-15T10:30:00Z",
-  "updated_at": "2026-03-02T09:15:00Z",
-  "student_profile": {
-    "id": "850e8400-e29b-41d4-a716-446655440000",
-    "student_id_number": "CS2024001",
-    "program": "950e8400-e29b-41d4-a716-446655440000",
-    "current_semester": 4,
-    "admission_date": "2024-08-15",
-    "batch_year": 2024
-  },
-  "faculty_profile": null
-}
-```
-
----
-
-### Update Current User
-**PATCH** `/api/v1/users/me/`
-
-Updates the authenticated user's profile.
-
-**Authentication Required:** Yes
-
-**Request Body (all fields optional):**
-| Field | Type | Description |
-|-------|------|-------------|
-| first_name | string | User's first name |
-| last_name | string | User's last name |
-| phone | string | Contact phone number |
-
-**Example Request:**
-```json
-{
-  "phone": "+1234567899"
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "john.doe@university.edu",
-  "first_name": "John",
-  "last_name": "Doe",
-  "phone": "+1234567899",
-  ...
-}
-```
-
----
-
-### Upload Avatar
-**POST** `/api/v1/users/me/avatar/`
-
-Uploads a profile picture for the authenticated user.
-
-**Authentication Required:** Yes
-
-**Request Body (multipart/form-data):**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| avatar | file | Yes | Image file (JPEG, PNG) |
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "profile_picture": "/media/avatars/john_doe_2026.jpg"
-  }
-}
-```
-
----
-
-### Get User by ID
-**GET** `/api/v1/users/{user_id}/`
-
-Retrieves a user by ID (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Example Response:** `200 OK`
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "john.doe@university.edu",
-  "first_name": "John",
-  "last_name": "Doe",
-  ...
-}
-```
-
----
-
-### Update User
-**PATCH** `/api/v1/users/{user_id}/`
-
-Updates a user by ID (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body (all fields optional):**
-| Field | Type | Description |
-|-------|------|-------------|
-| first_name | string | User's first name |
-| last_name | string | User's last name |
-| role | string | User's role |
-| department | UUID | Department ID |
-| phone | string | Contact phone number |
-| is_active | boolean | Active status |
-
----
-
-### Delete User (Soft)
-**DELETE** `/api/v1/users/{user_id}/`
-
-Soft deletes a user (sets is_active to false).
-
-**Authentication Required:** Yes (Admin only)
-
-**Example Response:** `204 No Content`
-
----
-
-### Reset User Password
-**POST** `/api/v1/users/{user_id}/reset-password/`
-
-Admin resets a user's password.
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| new_password | string | Yes | New password (min 8 chars) |
-
-**Example Request:**
-```json
-{
-  "new_password": "NewPassword123!"
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "message": "Password reset successfully."
-}
-```
-
----
-
-### List Audit Logs
-**GET** `/api/v1/admin/audit-logs/`
-
-Lists all audit logs (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 100,
-  "results": [
-    {
-      "id": "aa0e8400-e29b-41d4-a716-446655440000",
-      "user": "550e8400-e29b-41d4-a716-446655440000",
-      "user_email": "admin@university.edu",
-      "action": "USER_CREATED",
-      "entity_type": "User",
-      "entity_id": "bb0e8400-e29b-41d4-a716-446655440000",
-      "details": {"role": "student"},
-      "ip_address": "192.168.1.1",
-      "created_at": "2026-03-02T10:30:00Z"
-    }
-  ]
-}
-```
-
----
-
 ## Academics
 
-### List Departments
-**GET** `/api/v1/departments/`
-
-Lists all departments.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 10,
-  "results": [
-    {
-      "id": "650e8400-e29b-41d4-a716-446655440000",
-      "name": "Computer Science",
-      "code": "CS",
-      "head": "760e8400-e29b-41d4-a716-446655440000",
-      "head_name": "Dr. Jane Smith",
-      "created_at": "2025-01-10T08:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### Create Department
-**POST** `/api/v1/departments/`
-
-Creates a new department (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | Yes | Department name |
-| code | string | Yes | Department code (unique) |
-| head | UUID | No | Department head user ID |
-
-**Example Request:**
-```json
-{
-  "name": "Computer Science",
-  "code": "CS",
-  "head": "760e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-**Example Response:** `201 Created`
-```json
-{
-  "id": "650e8400-e29b-41d4-a716-446655440000",
-  "name": "Computer Science",
-  "code": "CS",
-  "head": "760e8400-e29b-41d4-a716-446655440000",
-  "head_name": "Dr. Jane Smith",
-  "created_at": "2026-03-02T10:30:00Z"
-}
-```
-
----
-
-### Get Department
-**GET** `/api/v1/departments/{department_id}/`
-
-Retrieves a department by ID.
-
-**Authentication Required:** Yes
-
----
-
-### Update Department
-**PATCH** `/api/v1/departments/{department_id}/`
-
-Updates a department (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
----
-
-### Delete Department
-**DELETE** `/api/v1/departments/{department_id}/`
-
-Deletes a department (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
----
-
-### List Programs
-**GET** `/api/v1/academics/programs/`
-
-Lists all academic programs.
-
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| department | UUID | Filter by department ID |
-| degree_type | string | Filter by: `UG`, `PG`, `PhD`, `Diploma` |
-| is_active | boolean | Filter by active status |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 15,
-  "results": [
-    {
-      "id": "950e8400-e29b-41d4-a716-446655440000",
-      "name": "Bachelor of Technology in Computer Science",
-      "code": "BTECHCS",
-      "department": "650e8400-e29b-41d4-a716-446655440000",
-      "department_name": "Computer Science",
-      "duration_years": 4,
-      "degree_type": "UG",
-      "is_active": true
-    }
-  ]
-}
-```
-
----
-
-### Create Program
-**POST** `/api/v1/academics/programs/`
-
-Creates a new program (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | Yes | Program name |
-| code | string | Yes | Program code (unique) |
-| department | UUID | Yes | Department ID |
-| duration_years | integer | Yes | Program duration in years |
-| degree_type | string | Yes | One of: `UG`, `PG`, `PhD`, `Diploma` |
-| is_active | boolean | No | Active status (default: true) |
-
-**Example Request:**
-```json
-{
-  "name": "Bachelor of Technology in Computer Science",
-  "code": "BTECHCS",
-  "department": "650e8400-e29b-41d4-a716-446655440000",
-  "duration_years": 4,
-  "degree_type": "UG",
-  "is_active": true
-}
-```
-
----
-
-### List Semesters
-**GET** `/api/v1/academics/semesters/`
-
-Lists all academic semesters.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 8,
-  "results": [
-    {
-      "id": "a50e8400-e29b-41d4-a716-446655440000",
-      "name": "Spring 2026",
-      "academic_year": "2025-2026",
-      "start_date": "2026-01-10",
-      "end_date": "2026-05-15",
-      "is_current": true
-    }
-  ]
-}
-```
-
----
-
-### Get Current Semester
-**GET** `/api/v1/academics/semesters/current/`
-
-Retrieves the current active semester.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "a50e8400-e29b-41d4-a716-446655440000",
-    "name": "Spring 2026",
-    "academic_year": "2025-2026",
-    "start_date": "2026-01-10",
-    "end_date": "2026-05-15",
-    "is_current": true
-  }
-}
-```
-
----
-
-### List Courses
+### academics_courses_list
 **GET** `/api/v1/academics/courses/`
 
-Lists all courses.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| department | query | No | string |  |
+| is_active | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| department | UUID | Filter by department ID |
-| is_active | boolean | Filter by active status |
-| search | string | Search by name or code |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 50,
-  "results": [
-    {
-      "id": "b50e8400-e29b-41d4-a716-446655440000",
-      "name": "Data Structures and Algorithms",
-      "code": "CS201",
-      "department": "650e8400-e29b-41d4-a716-446655440000",
-      "department_name": "Computer Science",
-      "credits": 4,
-      "description": "Introduction to fundamental data structures and algorithms.",
-      "is_active": true
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Course
+### academics_courses_create
 **POST** `/api/v1/academics/courses/`
 
-Creates a new course (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | Yes | Course name |
-| code | string | Yes | Course code (unique) |
-| department | UUID | Yes | Department ID |
-| credits | integer | Yes | Number of credits |
-| description | string | No | Course description |
-| is_active | boolean | No | Active status (default: true) |
+**Responses:**
+- **201**: 
 
 ---
 
-### List Course Offerings
-**GET** `/api/v1/academics/offerings/`
+### academics_courses_retrieve
+**GET** `/api/v1/academics/courses/{id}/`
 
-Lists all course offerings for the current semester.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| course | UUID | Filter by course ID |
-| semester | UUID | Filter by semester ID |
-| faculty | UUID | Filter by faculty user ID |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 25,
-  "results": [
-    {
-      "id": "c50e8400-e29b-41d4-a716-446655440000",
-      "course": "b50e8400-e29b-41d4-a716-446655440000",
-      "course_name": "Data Structures and Algorithms",
-      "course_code": "CS201",
-      "semester": "a50e8400-e29b-41d4-a716-446655440000",
-      "semester_name": "Spring 2026",
-      "faculty": "760e8400-e29b-41d4-a716-446655440000",
-      "faculty_name": "Dr. Jane Smith",
-      "section": "A",
-      "max_students": 60,
-      "enrolled_count": 45
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Course Offering
-**POST** `/api/v1/academics/offerings/`
+### academics_courses_update
+**PUT** `/api/v1/academics/courses/{id}/`
 
-Creates a new course offering (Admin only).
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| course | UUID | Yes | Course ID |
-| semester | UUID | Yes | Semester ID |
-| faculty | UUID | Yes | Faculty user ID |
-| section | string | No | Section (default: "A") |
-| max_students | integer | No | Max enrollment (default: 60) |
+**Responses:**
+- **200**: 
 
 ---
 
-### Get Course Offering Students
-**GET** `/api/v1/academics/offerings/{offering_id}/students/`
+### academics_courses_partial_update
+**PATCH** `/api/v1/academics/courses/{id}/`
 
-Lists all students enrolled in a course offering.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes (Admin or Faculty)
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "email": "john.doe@university.edu",
-      "first_name": "John",
-      "last_name": "Doe",
-      "role": "student",
-      "department": "650e8400-e29b-41d4-a716-446655440000",
-      "department_name": "Computer Science",
-      "phone": "+1234567890",
-      "is_active": true
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Enrollment
+### academics_courses_destroy
+**DELETE** `/api/v1/academics/courses/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### academics_enrollments_create
 **POST** `/api/v1/academics/enrollments/`
 
-Enrolls a student in a course offering.
-
-**Authentication Required:** Yes
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| student | UUID | Yes | Student user ID |
-| course_offering | UUID | Yes | Course offering ID |
-
-**Example Request:**
-```json
-{
-  "student": "550e8400-e29b-41d4-a716-446655440000",
-  "course_offering": "c50e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-**Example Response:** `201 Created`
-```json
-{
-  "id": "d50e8400-e29b-41d4-a716-446655440000",
-  "student": "550e8400-e29b-41d4-a716-446655440000",
-  "student_name": "John Doe",
-  "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-  "course_name": "Data Structures and Algorithms",
-  "enrolled_at": "2026-03-02T10:30:00Z",
-  "status": "active"
-}
-```
+**Responses:**
+- **201**: 
 
 ---
 
-### Get My Enrollments
+### academics_enrollments_destroy
+**DELETE** `/api/v1/academics/enrollments/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### academics_enrollments_me_list
 **GET** `/api/v1/academics/enrollments/me/`
 
-Lists the authenticated student's enrollments.
+GET /api/v1/academics/enrollments/me/
 
-**Authentication Required:** Yes (Student)
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Example Response:** `200 OK`
-```json
-{
-  "count": 5,
-  "results": [
-    {
-      "id": "d50e8400-e29b-41d4-a716-446655440000",
-      "student": "550e8400-e29b-41d4-a716-446655440000",
-      "student_name": "John Doe",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "course_name": "Data Structures and Algorithms",
-      "enrolled_at": "2026-01-15T10:00:00Z",
-      "status": "active"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Delete Enrollment (Drop Course)
-**DELETE** `/api/v1/academics/enrollments/{enrollment_id}/`
+### academics_offerings_list
+**GET** `/api/v1/academics/offerings/`
 
-Drops a course enrollment.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| course | query | No | string |  |
+| faculty | query | No | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+| semester | query | No | string |  |
 
-**Authentication Required:** Yes
+**Responses:**
+- **200**: 
 
-**Example Response:** `204 No Content`
+---
+
+### academics_offerings_create
+**POST** `/api/v1/academics/offerings/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### academics_offerings_retrieve
+**GET** `/api/v1/academics/offerings/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_offerings_update
+**PUT** `/api/v1/academics/offerings/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_offerings_partial_update
+**PATCH** `/api/v1/academics/offerings/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_offerings_students_list
+**GET** `/api/v1/academics/offerings/{id}/students/`
+
+GET /api/v1/academics/offerings/{id}/students/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_programs_list
+**GET** `/api/v1/academics/programs/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| degree_type | query | No | string | * `UG` - Undergraduate * `PG` - Postgraduate * `PhD` - Doctorate * `Diploma` - Diploma |
+| department | query | No | string |  |
+| is_active | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_programs_create
+**POST** `/api/v1/academics/programs/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### academics_programs_retrieve
+**GET** `/api/v1/academics/programs/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_programs_update
+**PUT** `/api/v1/academics/programs/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_programs_partial_update
+**PATCH** `/api/v1/academics/programs/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_programs_destroy
+**DELETE** `/api/v1/academics/programs/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### academics_schools_list
+**GET** `/api/v1/academics/schools/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_schools_create
+**POST** `/api/v1/academics/schools/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### academics_schools_retrieve
+**GET** `/api/v1/academics/schools/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_schools_update
+**PUT** `/api/v1/academics/schools/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_schools_partial_update
+**PATCH** `/api/v1/academics/schools/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_schools_destroy
+**DELETE** `/api/v1/academics/schools/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### academics_semesters_list
+**GET** `/api/v1/academics/semesters/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_semesters_create
+**POST** `/api/v1/academics/semesters/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### academics_semesters_retrieve
+**GET** `/api/v1/academics/semesters/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_semesters_update
+**PUT** `/api/v1/academics/semesters/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_semesters_partial_update
+**PATCH** `/api/v1/academics/semesters/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### academics_semesters_current_retrieve
+**GET** `/api/v1/academics/semesters/current/`
+
+GET /api/v1/academics/semesters/current/
+
+**Responses:**
+- **200**: 
+
+---
+
+## Admin
+
+### admin_audit_logs_list
+**GET** `/api/v1/admin/audit-logs/`
+
+GET /api/v1/admin/audit-logs/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| action | query | No | string |  |
+| entity_type | query | No | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| user | query | No | string |  |
+
+**Responses:**
+- **200**: 
 
 ---
 
 ## Assignments
 
-### List Assignments
+### assignments_list
 **GET** `/api/v1/assignments/`
 
-Lists all assignments. Students see only published assignments.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| assignment_type | query | No | string | * `assignment` - Assignment * `quiz` - Quiz * `exam` - Exam * `project` - Project |
+| course_offering | query | No | string |  |
+| is_published | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| course_offering | UUID | Filter by course offering ID |
-| assignment_type | string | Filter by: `assignment`, `quiz`, `exam`, `project` |
-| is_published | boolean | Filter by published status |
-| search | string | Search by title |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 20,
-  "results": [
-    {
-      "id": "e50e8400-e29b-41d4-a716-446655440000",
-      "title": "Assignment 1: Binary Trees",
-      "description": "Implement various binary tree operations.",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "course_name": "Data Structures and Algorithms",
-      "created_by": "760e8400-e29b-41d4-a716-446655440000",
-      "created_by_name": "Dr. Jane Smith",
-      "due_date": "2026-03-15T23:59:00Z",
-      "max_marks": 100.00,
-      "assignment_type": "assignment",
-      "attachments": [
-        {"filename": "assignment1.pdf", "url": "/media/assignments/assignment1.pdf"}
-      ],
-      "is_published": true,
-      "submission_count": 35,
-      "created_at": "2026-03-01T10:00:00Z",
-      "updated_at": "2026-03-01T10:00:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Assignment
+### assignments_create
 **POST** `/api/v1/assignments/`
 
-Creates a new assignment (Faculty only).
-
-**Authentication Required:** Yes (Faculty)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| title | string | Yes | Assignment title |
-| description | string | No | Assignment description |
-| course_offering | UUID | Yes | Course offering ID |
-| due_date | datetime | Yes | Due date (ISO 8601 format) |
-| max_marks | decimal | Yes | Maximum marks |
-| assignment_type | string | Yes | One of: `assignment`, `quiz`, `exam`, `project` |
-| attachments | JSON | No | Array of attachment objects |
-| is_published | boolean | No | Published status (default: false) |
-
-**Example Request:**
-```json
-{
-  "title": "Assignment 1: Binary Trees",
-  "description": "Implement various binary tree operations.",
-  "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-  "due_date": "2026-03-15T23:59:00Z",
-  "max_marks": 100.00,
-  "assignment_type": "assignment",
-  "is_published": true
-}
-```
+**Responses:**
+- **201**: 
 
 ---
 
-### Get Assignment
-**GET** `/api/v1/assignments/{assignment_id}/`
+### assignments_retrieve
+**GET** `/api/v1/assignments/{id}/`
 
-Retrieves an assignment by ID.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
----
-
-### Update Assignment
-**PATCH** `/api/v1/assignments/{assignment_id}/`
-
-Updates an assignment (Owner or Admin).
-
-**Authentication Required:** Yes (Owner or Admin)
+**Responses:**
+- **200**: 
 
 ---
 
-### Delete Assignment
-**DELETE** `/api/v1/assignments/{assignment_id}/`
+### assignments_update
+**PUT** `/api/v1/assignments/{id}/`
 
-Deletes an assignment (Owner or Admin).
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes (Owner or Admin)
-
----
-
-### Submit Assignment
-**POST** `/api/v1/assignments/{assignment_id}/submit/`
-
-Submits work for an assignment.
-
-**Authentication Required:** Yes (Student)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| file | file | No | Uploaded file |
-| text_content | string | No | Text submission |
-
-**Example Request (multipart/form-data):**
-```
-file: assignment1_john_doe.pdf
-text_content: "My solution involves..."
-```
-
-**Example Response:** `201 Created`
-```json
-{
-  "id": "f50e8400-e29b-41d4-a716-446655440000",
-  "assignment": "e50e8400-e29b-41d4-a716-446655440000",
-  "student": "550e8400-e29b-41d4-a716-446655440000",
-  "student_name": "John Doe",
-  "file": "/media/submissions/2026/03/assignment1_john_doe.pdf",
-  "text_content": "My solution involves...",
-  "submitted_at": "2026-03-02T15:30:00Z",
-  "marks_obtained": null,
-  "grade": null,
-  "feedback": null,
-  "graded_by": null,
-  "graded_at": null,
-  "status": "submitted"
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### List Assignment Submissions
-**GET** `/api/v1/assignments/{assignment_id}/submissions/`
+### assignments_partial_update
+**PATCH** `/api/v1/assignments/{id}/`
 
-Lists all submissions for an assignment (Faculty or Admin).
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes (Faculty or Admin)
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 35,
-  "results": [
-    {
-      "id": "f50e8400-e29b-41d4-a716-446655440000",
-      "assignment": "e50e8400-e29b-41d4-a716-446655440000",
-      "student": "550e8400-e29b-41d4-a716-446655440000",
-      "student_name": "John Doe",
-      "file": "/media/submissions/2026/03/assignment1_john_doe.pdf",
-      "text_content": null,
-      "submitted_at": "2026-03-02T15:30:00Z",
-      "marks_obtained": 85.00,
-      "grade": "A",
-      "feedback": "Excellent work!",
-      "graded_by": "760e8400-e29b-41d4-a716-446655440000",
-      "graded_at": "2026-03-05T10:00:00Z",
-      "status": "graded"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Get My Submission
-**GET** `/api/v1/assignments/{assignment_id}/submissions/me/`
+### assignments_destroy
+**DELETE** `/api/v1/assignments/{id}/`
 
-Retrieves the authenticated student's submission for an assignment.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes (Student)
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "f50e8400-e29b-41d4-a716-446655440000",
-    "assignment": "e50e8400-e29b-41d4-a716-446655440000",
-    "student": "550e8400-e29b-41d4-a716-446655440000",
-    "student_name": "John Doe",
-    "file": "/media/submissions/2026/03/assignment1_john_doe.pdf",
-    "submitted_at": "2026-03-02T15:30:00Z",
-    "marks_obtained": 85.00,
-    "grade": "A",
-    "feedback": "Excellent work!",
-    "status": "graded"
-  }
-}
-```
+**Responses:**
+- **204**: No response body
 
 ---
 
-### Grade Submission
-**POST** `/api/v1/assignments/{assignment_id}/submissions/{submission_id}/grade/`
+### assignments_submissions_list
+**GET** `/api/v1/assignments/{id}/submissions/`
 
-Grades a student's submission (Faculty or Admin).
+GET /api/v1/assignments/{id}/submissions/
 
-**Authentication Required:** Yes (Faculty or Admin)
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| marks_obtained | decimal | Yes | Marks awarded |
-| grade | string | No | Letter grade (e.g., "A", "B+") |
-| feedback | string | No | Feedback text |
-
-**Example Request:**
-```json
-{
-  "marks_obtained": 85.00,
-  "grade": "A",
-  "feedback": "Excellent work! Your implementation is efficient and well-documented."
-}
-```
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "message": "Submission graded successfully."
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Export Grades
+### assignments_submissions_grade_partial_update
+**PATCH** `/api/v1/assignments/{id}/submissions/{sub_id}/grade/`
+
+PATCH /api/v1/assignments/{pk}/submissions/{sub_id}/grade/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+| sub_id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### assignments_submissions_me_retrieve
+**GET** `/api/v1/assignments/{id}/submissions/me/`
+
+GET /api/v1/assignments/{id}/submissions/me/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### assignments_submit_create
+**POST** `/api/v1/assignments/{id}/submit/`
+
+POST /api/v1/assignments/{id}/submit/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **201**: 
+
+---
+
+### assignments_export_retrieve
 **GET** `/api/v1/assignments/export/{offering_id}/`
 
-Exports all grades for a course offering as CSV (Faculty or Admin).
+GET /api/v1/assignments/export/{offering_id}/ — CSV export.
 
-**Authentication Required:** Yes (Faculty or Admin)
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| offering_id | path | Yes | string |  |
 
-**Example Response:** `200 OK` (CSV file download)
-
----
-
-## Content Management
-
-### List Folders
-**GET** `/api/v1/content/folders/`
-
-Lists all content folders.
-
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| course_offering | UUID | Filter by course offering ID |
-| parent | UUID | Filter by parent folder ID |
-| visibility | string | Filter by: `public`, `department`, `course`, `private` |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 10,
-  "results": [
-    {
-      "id": "g50e8400-e29b-41d4-a716-446655440000",
-      "name": "Lecture Notes",
-      "parent": null,
-      "created_by": "760e8400-e29b-41d4-a716-446655440000",
-      "created_by_name": "Dr. Jane Smith",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "visibility": "course",
-      "created_at": "2026-01-15T10:00:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Folder
-**POST** `/api/v1/content/folders/`
+## Attendance
 
-Creates a new content folder (Faculty or Admin).
+### attendance_update
+**PUT** `/api/v1/attendance/{id}/`
 
-**Authentication Required:** Yes (Faculty or Admin)
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | Yes | Folder name |
-| parent | UUID | No | Parent folder ID |
-| course_offering | UUID | No | Course offering ID |
-| visibility | string | No | One of: `public`, `department`, `course`, `private` |
+**Responses:**
+- **200**: 
 
 ---
 
-### List Content
-**GET** `/api/v1/content/`
+### attendance_partial_update
+**PATCH** `/api/v1/attendance/{id}/`
 
-Lists all content items.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| course_offering | UUID | Filter by course offering ID |
-| content_type | string | Filter by: `document`, `video`, `image`, `link`, `assignment` |
-| folder | UUID | Filter by folder ID |
-| visibility | string | Filter by visibility |
-| search | string | Search by title or description |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 50,
-  "results": [
-    {
-      "id": "h50e8400-e29b-41d4-a716-446655440000",
-      "title": "Lecture 1: Introduction to Data Structures",
-      "content_type": "document",
-      "file_size": 2048576,
-      "mime_type": "application/pdf",
-      "uploaded_by": "760e8400-e29b-41d4-a716-446655440000",
-      "uploaded_by_name": "Dr. Jane Smith",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "visibility": "course",
-      "is_published": true,
-      "tags": [
-        {"id": "tag1", "name": "introduction"},
-        {"id": "tag2", "name": "data-structures"}
-      ],
-      "created_at": "2026-01-20T10:00:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Content
-**POST** `/api/v1/content/`
-
-Uploads new content (Faculty or Admin).
-
-**Authentication Required:** Yes (Faculty or Admin)
-
-**Request Body (multipart/form-data or JSON):**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| title | string | Yes | Content title |
-| description | string | No | Content description |
-| content_type | string | Yes | One of: `document`, `video`, `image`, `link`, `assignment` |
-| file | file | No* | File upload |
-| external_url | string | No* | External URL (for links/videos) |
-| folder | UUID | No | Folder ID |
-| course_offering | UUID | No | Course offering ID |
-| visibility | string | No | Visibility level (default: `course`) |
-| tag_ids | array | No | Array of tag UUIDs |
-| publish_at | datetime | No | Schedule publication |
-| expires_at | datetime | No | Expiration date |
-| is_published | boolean | No | Published status (default: true) |
-
-*Either `file` or `external_url` is required depending on content type.
-
----
-
-### Get Content
-**GET** `/api/v1/content/{content_id}/`
-
-Retrieves content details and logs a view.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "h50e8400-e29b-41d4-a716-446655440000",
-    "title": "Lecture 1: Introduction to Data Structures",
-    "description": "Overview of fundamental data structures.",
-    "content_type": "document",
-    "file": "/media/content/2026/01/lecture1.pdf",
-    "file_size": 2048576,
-    "mime_type": "application/pdf",
-    "external_url": null,
-    "folder": "g50e8400-e29b-41d4-a716-446655440000",
-    "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-    "uploaded_by": "760e8400-e29b-41d4-a716-446655440000",
-    "uploaded_by_name": "Dr. Jane Smith",
-    "visibility": "course",
-    "tags": [
-      {"id": "tag1", "name": "introduction"}
-    ],
-    "publish_at": null,
-    "expires_at": null,
-    "is_published": true,
-    "created_at": "2026-01-20T10:00:00Z",
-    "updated_at": "2026-01-20T10:00:00Z"
-  }
-}
-```
-
----
-
-### Download Content
-**GET** `/api/v1/content/{content_id}/download/`
-
-Downloads content and logs the action.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "url": "/media/content/2026/01/lecture1.pdf"
-  }
-}
-```
-
----
-
-### Get Content Stats
-**GET** `/api/v1/content/{content_id}/stats/`
-
-Gets view and download statistics (Owner or Admin).
-
-**Authentication Required:** Yes (Owner or Admin)
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "total_views": 150,
-    "total_downloads": 85,
-    "unique_users": 42
-  }
-}
-```
-
----
-
-### List Recent Content
-**GET** `/api/v1/content/recent/`
-
-Lists recently uploaded content.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "h50e8400-e29b-41d4-a716-446655440000",
-      "title": "Lecture 1: Introduction to Data Structures",
-      "content_type": "document",
-      "created_at": "2026-01-20T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### List Tags
-**GET** `/api/v1/content/tags/`
-
-Lists all content tags.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 20,
-  "results": [
-    {
-      "id": "tag1",
-      "name": "introduction"
-    },
-    {
-      "id": "tag2",
-      "name": "data-structures"
-    }
-  ]
-}
-```
-
----
-
-### Create Tag
-**POST** `/api/v1/content/tags/`
-
-Creates a new content tag.
-
-**Authentication Required:** Yes
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | Yes | Tag name (unique) |
-
----
-
-### List Bookmarks
-**GET** `/api/v1/content/bookmarks/`
-
-Lists the authenticated user's bookmarks.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 10,
-  "results": [
-    {
-      "id": "i50e8400-e29b-41d4-a716-446655440000",
-      "user": "550e8400-e29b-41d4-a716-446655440000",
-      "content": "h50e8400-e29b-41d4-a716-446655440000",
-      "content_title": "Lecture 1: Introduction to Data Structures",
-      "content_type": "document",
-      "created_at": "2026-02-01T14:30:00Z"
-    }
-  ]
-}
-```
-
----
-
-### Create Bookmark
-**POST** `/api/v1/content/bookmarks/`
-
-Bookmarks a content item.
-
-**Authentication Required:** Yes
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| content | UUID | Yes | Content ID |
-
----
-
-### Delete Bookmark
-**DELETE** `/api/v1/content/bookmarks/{bookmark_id}/`
-
-Removes a bookmark.
-
-**Authentication Required:** Yes
-
----
-
-## Timetable & Attendance
-
-### List Rooms
-**GET** `/api/v1/timetable/rooms/`
-
-Lists all rooms.
-
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| room_type | string | Filter by: `classroom`, `lab`, `auditorium`, `conference` |
-| is_available | boolean | Filter by availability |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 30,
-  "results": [
-    {
-      "id": "j50e8400-e29b-41d4-a716-446655440000",
-      "name": "Room 101",
-      "building": "Science Block",
-      "capacity": 60,
-      "room_type": "classroom",
-      "is_available": true
-    }
-  ]
-}
-```
-
----
-
-### Create Room
-**POST** `/api/v1/timetable/rooms/`
-
-Creates a new room (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | Yes | Room name |
-| building | string | No | Building name |
-| capacity | integer | Yes | Room capacity |
-| room_type | string | Yes | One of: `classroom`, `lab`, `auditorium`, `conference` |
-| is_available | boolean | No | Availability (default: true) |
-
----
-
-### List Timetable Entries
-**GET** `/api/v1/timetable/`
-
-Lists all timetable entries.
-
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| semester | UUID | Filter by semester ID |
-| day_of_week | integer | Filter by day (0=Monday, 6=Sunday) |
-| room | UUID | Filter by room ID |
-| faculty | UUID | Filter by faculty user ID |
-| department | UUID | Filter by department ID |
-| is_active | boolean | Filter by active status |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 40,
-  "results": [
-    {
-      "id": "k50e8400-e29b-41d4-a716-446655440000",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "course_name": "Data Structures and Algorithms",
-      "course_code": "CS201",
-      "faculty_name": "Dr. Jane Smith",
-      "room": "j50e8400-e29b-41d4-a716-446655440000",
-      "room_name": "Room 101",
-      "day_of_week": 0,
-      "day_name": "Monday",
-      "start_time": "09:00:00",
-      "end_time": "10:30:00",
-      "semester": "a50e8400-e29b-41d4-a716-446655440000",
-      "is_active": true
-    }
-  ]
-}
-```
-
----
-
-### Create Timetable Entry
-**POST** `/api/v1/timetable/`
-
-Creates a new timetable entry (Admin only).
-
-**Authentication Required:** Yes (Admin only)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| course_offering | UUID | Yes | Course offering ID |
-| room | UUID | Yes | Room ID |
-| day_of_week | integer | Yes | Day (0=Monday, 6=Sunday) |
-| start_time | time | Yes | Start time (HH:MM:SS) |
-| end_time | time | Yes | End time (HH:MM:SS) |
-| semester | UUID | Yes | Semester ID |
-| is_active | boolean | No | Active status (default: true) |
-
----
-
-### Get My Timetable
-**GET** `/api/v1/timetable/me/`
-
-Gets the authenticated user's timetable (student or faculty).
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 15,
-  "results": [
-    {
-      "id": "k50e8400-e29b-41d4-a716-446655440000",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "course_name": "Data Structures and Algorithms",
-      "course_code": "CS201",
-      "faculty_name": "Dr. Jane Smith",
-      "room": "j50e8400-e29b-41d4-a716-446655440000",
-      "room_name": "Room 101",
-      "day_of_week": 0,
-      "day_name": "Monday",
-      "start_time": "09:00:00",
-      "end_time": "10:30:00",
-      "semester": "a50e8400-e29b-41d4-a716-446655440000",
-      "is_active": true
-    }
-  ]
-}
-```
-
----
-
-### Check Timetable Conflicts
-**GET** `/api/v1/timetable/conflicts/`
-
-Checks for scheduling conflicts.
-
-**Authentication Required:** Yes (Admin)
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| semester | UUID | Semester ID |
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "conflicts": [
-      {
-        "type": "room_conflict",
-        "room": "Room 101",
-        "time": "Monday 09:00-10:30",
-        "entries": [
-          "CS201 Section A",
-          "CS202 Section B"
-        ]
-      }
-    ]
-  }
-}
-```
-
----
-
-### Mark Bulk Attendance
-**POST** `/api/v1/attendance/mark/`
-
-Marks attendance for multiple students (Faculty or Admin).
-
-**Authentication Required:** Yes (Faculty or Admin)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| timetable_entry_id | UUID | Yes | Timetable entry ID |
-| date | date | Yes | Attendance date (YYYY-MM-DD) |
-| records | array | Yes | Array of attendance records |
-
-**Record Object:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| student_id | UUID | Yes | Student user ID |
-| status | string | Yes | One of: `present`, `absent`, `late`, `excused` |
-
-**Example Request:**
-```json
-{
-  "timetable_entry_id": "k50e8400-e29b-41d4-a716-446655440000",
-  "date": "2026-03-02",
-  "records": [
-    {
-      "student_id": "550e8400-e29b-41d4-a716-446655440000",
-      "status": "present"
-    },
-    {
-      "student_id": "660e8400-e29b-41d4-a716-446655440000",
-      "status": "absent"
-    }
-  ]
-}
-```
-
-**Example Response:** `201 Created`
-```json
-{
-  "status": "success",
-  "message": "Attendance marked for 2 students."
-}
-```
-
----
-
-### Get My Attendance
-**GET** `/api/v1/attendance/me/`
-
-Gets the authenticated student's attendance records.
-
-**Authentication Required:** Yes (Student)
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 50,
-  "results": [
-    {
-      "id": "l50e8400-e29b-41d4-a716-446655440000",
-      "timetable_entry": "k50e8400-e29b-41d4-a716-446655440000",
-      "student": "550e8400-e29b-41d4-a716-446655440000",
-      "student_name": "John Doe",
-      "date": "2026-03-02",
-      "status": "present",
-      "marked_by": "760e8400-e29b-41d4-a716-446655440000",
-      "remarks": null,
-      "created_at": "2026-03-02T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-### Get My Course Attendance
-**GET** `/api/v1/attendance/me/{offering_id}/`
-
-Gets the authenticated student's attendance for a specific course.
-
-**Authentication Required:** Yes (Student)
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "course": "Data Structures and Algorithms",
-    "total_classes": 30,
-    "attended": 28,
-    "percentage": 93.33,
-    "records": [
-      {
-        "date": "2026-03-02",
-        "status": "present"
-      }
-    ]
-  }
-}
-```
-
----
-
-### Get Course Attendance
+### attendance_course_list
 **GET** `/api/v1/attendance/course/{offering_id}/`
 
-Gets attendance records for all students in a course (Faculty or Admin).
+GET /api/v1/attendance/course/{offering_id}/
 
-**Authentication Required:** Yes (Faculty or Admin)
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| offering_id | path | Yes | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "student_id": "550e8400-e29b-41d4-a716-446655440000",
-      "student_name": "John Doe",
-      "total_classes": 30,
-      "attended": 28,
-      "percentage": 93.33
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Update Attendance Record
-**PATCH** `/api/v1/attendance/{attendance_id}/`
+### attendance_mark_create
+**POST** `/api/v1/attendance/mark/`
 
-Updates an attendance record (Faculty or Admin).
+POST /api/v1/attendance/mark/ — Mark attendance in bulk.
 
-**Authentication Required:** Yes (Faculty or Admin)
+**Responses:**
+- **201**: 
 
-**Request Body (all fields optional):**
-| Field | Type | Description |
-|-------|------|-------------|
-| status | string | One of: `present`, `absent`, `late`, `excused` |
-| remarks | string | Additional remarks |
+---
+
+### attendance_me_list
+**GET** `/api/v1/attendance/me/`
+
+GET /api/v1/attendance/me/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### attendance_me_list_2
+**GET** `/api/v1/attendance/me/{offering_id}/`
+
+GET /api/v1/attendance/me/{offering_id}/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| offering_id | path | Yes | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+## Authentication
+
+### auth_login_create
+**POST** `/api/v1/auth/login/`
+
+Takes a set of user credentials and returns an access and refresh JSON web
+token pair to prove the authentication of those credentials.
+
+**Responses:**
+- **200**: 
+
+---
+
+### auth_logout_create
+**POST** `/api/v1/auth/logout/`
+
+POST /api/v1/auth/logout/ — Blacklist the refresh token.
+
+**Responses:**
+- **200**: 
+
+---
+
+### auth_password_change_create
+**POST** `/api/v1/auth/password/change/`
+
+POST /api/v1/auth/password/change/
+
+**Responses:**
+- **200**: 
+
+---
+
+### auth_refresh_create
+**POST** `/api/v1/auth/refresh/`
+
+Takes a refresh type JSON web token and returns an access type JSON web
+token if the refresh token is valid.
+
+**Responses:**
+- **200**: 
+
+---
+
+### auth_register_create
+**POST** `/api/v1/auth/register/`
+
+POST /api/v1/auth/register/ — Self-registration.
+
+**Responses:**
+- **201**: 
 
 ---
 
 ## Communications
 
-### List Announcements
+### communications_announcements_list
 **GET** `/api/v1/communications/announcements/`
 
-Lists all announcements.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| is_published | query | No | boolean |  |
+| is_urgent | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+| target_type | query | No | string | * `all` - All Users * `department` - Department * `course` - Course * `section` - Section |
 
-**Authentication Required:** Yes
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| target_type | string | Filter by: `all`, `department`, `course`, `section` |
-| is_urgent | boolean | Filter by urgent status |
-| is_published | boolean | Filter by published status |
-| search | string | Search by title or body |
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 25,
-  "results": [
-    {
-      "id": "m50e8400-e29b-41d4-a716-446655440000",
-      "title": "Midterm Exams Schedule",
-      "body": "The midterm exams will be held from March 15-20, 2026.",
-      "created_by": "760e8400-e29b-41d4-a716-446655440000",
-      "created_by_name": "Dr. Jane Smith",
-      "target_type": "department",
-      "target_id": "650e8400-e29b-41d4-a716-446655440000",
-      "is_urgent": true,
-      "publish_at": null,
-      "expires_at": "2026-03-20T23:59:00Z",
-      "is_published": true,
-      "created_at": "2026-03-01T10:00:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Announcement
+### communications_announcements_create
 **POST** `/api/v1/communications/announcements/`
 
-Creates a new announcement (Faculty or Admin).
-
-**Authentication Required:** Yes (Faculty or Admin)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| title | string | Yes | Announcement title |
-| body | string | Yes | Announcement content |
-| target_type | string | Yes | One of: `all`, `department`, `course`, `section` |
-| target_id | UUID | No | Target entity ID (required if not `all`) |
-| is_urgent | boolean | No | Urgent flag (default: false) |
-| publish_at | datetime | No | Schedule publication |
-| expires_at | datetime | No | Expiration date |
-| is_published | boolean | No | Published status (default: true) |
-
-**Example Request:**
-```json
-{
-  "title": "Midterm Exams Schedule",
-  "body": "The midterm exams will be held from March 15-20, 2026.",
-  "target_type": "department",
-  "target_id": "650e8400-e29b-41d4-a716-446655440000",
-  "is_urgent": true,
-  "expires_at": "2026-03-20T23:59:00Z",
-  "is_published": true
-}
-```
+**Responses:**
+- **201**: 
 
 ---
 
-### List Messages
-**GET** `/api/v1/communications/messages/`
+### communications_announcements_retrieve
+**GET** `/api/v1/communications/announcements/{id}/`
 
-Lists all messages sent or received by the authenticated user.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 15,
-  "results": [
-    {
-      "id": "n50e8400-e29b-41d4-a716-446655440000",
-      "sender": "760e8400-e29b-41d4-a716-446655440000",
-      "sender_name": "Dr. Jane Smith",
-      "receiver": "550e8400-e29b-41d4-a716-446655440000",
-      "receiver_name": "John Doe",
-      "subject": "Assignment 1 Clarification",
-      "body": "Hi John, regarding your question about...",
-      "is_read": true,
-      "read_at": "2026-03-02T14:00:00Z",
-      "created_at": "2026-03-02T13:30:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Send Message
-**POST** `/api/v1/communications/messages/`
+### communications_announcements_update
+**PUT** `/api/v1/communications/announcements/{id}/`
 
-Sends a new message.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| receiver | UUID | Yes | Receiver user ID |
-| subject | string | No | Message subject |
-| body | string | Yes | Message content |
-
-**Example Request:**
-```json
-{
-  "receiver": "760e8400-e29b-41d4-a716-446655440000",
-  "subject": "Assignment 1 Question",
-  "body": "Dear Dr. Smith, I have a question about..."
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Get Message
-**GET** `/api/v1/communications/messages/{message_id}/`
+### communications_announcements_partial_update
+**PATCH** `/api/v1/communications/announcements/{id}/`
 
-Gets a message by ID. Marks as read if receiver.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
----
-
-### Delete Message
-**DELETE** `/api/v1/communications/messages/{message_id}/`
-
-Deletes a message.
-
-**Authentication Required:** Yes
+**Responses:**
+- **200**: 
 
 ---
 
-### List Discussion Forums
+### communications_announcements_destroy
+**DELETE** `/api/v1/communications/announcements/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### communications_forums_list
 **GET** `/api/v1/communications/forums/`
 
-Lists all discussion forums.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| course_offering | query | No | string |  |
+| is_active | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 10,
-  "results": [
-    {
-      "id": "o50e8400-e29b-41d4-a716-446655440000",
-      "title": "General Discussion - Data Structures",
-      "course_offering": "c50e8400-e29b-41d4-a716-446655440000",
-      "created_by": "760e8400-e29b-41d4-a716-446655440000",
-      "created_by_name": "Dr. Jane Smith",
-      "is_active": true,
-      "post_count": 45,
-      "created_at": "2026-01-15T10:00:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Create Discussion Forum
+### communications_forums_create
 **POST** `/api/v1/communications/forums/`
 
-Creates a new discussion forum (Faculty or Admin).
-
-**Authentication Required:** Yes (Faculty or Admin)
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| title | string | Yes | Forum title |
-| course_offering | UUID | Yes | Course offering ID |
-| is_active | boolean | No | Active status (default: true) |
+**Responses:**
+- **201**: 
 
 ---
 
-### Create Forum Post
-**POST** `/api/v1/communications/forums/{forum_id}/posts/`
+### communications_forums_posts_update
+**PUT** `/api/v1/communications/forums/{forum_id}/posts/{id}/`
 
-Creates a new post in a forum.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| forum_id | path | Yes | string |  |
+| id | path | Yes | string |  |
 
-**Authentication Required:** Yes
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| body | string | Yes | Post content |
-| parent | UUID | No | Parent post ID (for replies) |
-
-**Example Request:**
-```json
-{
-  "body": "I have a question about binary search trees...",
-  "parent": null
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### List Notifications
+### communications_forums_posts_partial_update
+**PATCH** `/api/v1/communications/forums/{forum_id}/posts/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| forum_id | path | Yes | string |  |
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### communications_forums_posts_delete_destroy
+**DELETE** `/api/v1/communications/forums/{forum_id}/posts/{id}/delete/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| forum_id | path | Yes | string |  |
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### communications_forums_retrieve
+**GET** `/api/v1/communications/forums/{id}/`
+
+GET /api/v1/communications/forums/{id}/ — includes top-level posts.
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### communications_forums_posts_create
+**POST** `/api/v1/communications/forums/{id}/posts/`
+
+POST /api/v1/communications/forums/{id}/posts/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **201**: 
+
+---
+
+### communications_messages_list
+**GET** `/api/v1/communications/messages/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### communications_messages_create
+**POST** `/api/v1/communications/messages/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### communications_messages_retrieve
+**GET** `/api/v1/communications/messages/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### communications_messages_destroy
+**DELETE** `/api/v1/communications/messages/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+## Content
+
+### content_list
+**GET** `/api/v1/content/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| content_type | query | No | string | * `document` - Document * `video` - Video * `image` - Image * `link` - Link * `assignment` - Assignment |
+| course_offering | query | No | string |  |
+| folder | query | No | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+| visibility | query | No | string | * `public` - Public * `department` - Department * `course` - Course * `private` - Private |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_create
+**POST** `/api/v1/content/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### content_retrieve
+**GET** `/api/v1/content/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_update
+**PUT** `/api/v1/content/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_partial_update
+**PATCH** `/api/v1/content/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_destroy
+**DELETE** `/api/v1/content/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### content_download_retrieve
+**GET** `/api/v1/content/{id}/download/`
+
+GET /api/v1/content/{id}/download/ — returns file URL and logs download.
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_stats_retrieve
+**GET** `/api/v1/content/{id}/stats/`
+
+GET /api/v1/content/{id}/stats/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_bookmarks_list
+**GET** `/api/v1/content/bookmarks/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_bookmarks_create
+**POST** `/api/v1/content/bookmarks/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### content_bookmarks_destroy
+**DELETE** `/api/v1/content/bookmarks/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### content_folders_list
+**GET** `/api/v1/content/folders/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| course_offering | query | No | string |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| parent | query | No | string |  |
+| search | query | No | string | A search term. |
+| visibility | query | No | string | * `public` - Public * `department` - Department * `course` - Course * `private` - Private |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_folders_create
+**POST** `/api/v1/content/folders/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### content_folders_retrieve
+**GET** `/api/v1/content/folders/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_folders_update
+**PUT** `/api/v1/content/folders/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_folders_partial_update
+**PATCH** `/api/v1/content/folders/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_folders_destroy
+**DELETE** `/api/v1/content/folders/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### content_recent_list
+**GET** `/api/v1/content/recent/`
+
+GET /api/v1/content/recent/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_tags_list
+**GET** `/api/v1/content/tags/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### content_tags_create
+**POST** `/api/v1/content/tags/`
+
+**Responses:**
+- **201**: 
+
+---
+
+## Departments
+
+### departments_list
+**GET** `/api/v1/departments/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### departments_create
+**POST** `/api/v1/departments/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### departments_retrieve
+**GET** `/api/v1/departments/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### departments_update
+**PUT** `/api/v1/departments/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### departments_partial_update
+**PATCH** `/api/v1/departments/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### departments_destroy
+**DELETE** `/api/v1/departments/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+## Notifications
+
+### notifications_list
 **GET** `/api/v1/notifications/`
 
-Lists all notifications for the authenticated user.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 20,
-  "results": [
-    {
-      "id": "p50e8400-e29b-41d4-a716-446655440000",
-      "user": "550e8400-e29b-41d4-a716-446655440000",
-      "title": "New Assignment Posted",
-      "message": "Dr. Jane Smith posted a new assignment: Assignment 1",
-      "notification_type": "assignment",
-      "reference_type": "Assignment",
-      "reference_id": "e50e8400-e29b-41d4-a716-446655440000",
-      "channel": "in_app",
-      "is_read": false,
-      "read_at": null,
-      "status": "delivered",
-      "created_at": "2026-03-02T10:00:00Z"
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Get Unread Count
-**GET** `/api/v1/notifications/unread-count/`
+### notifications_read_partial_update
+**PATCH** `/api/v1/notifications/{id}/read/`
 
-Gets the count of unread notifications.
+PATCH /api/v1/notifications/{id}/read/
 
-**Authentication Required:** Yes
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "data": {
-    "unread_count": 5
-  }
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Mark Notification as Read
-**POST** `/api/v1/notifications/{notification_id}/read/`
+### notifications_admin_stats_retrieve
+**GET** `/api/v1/notifications/admin/stats/`
 
-Marks a notification as read.
+GET /api/v1/notifications/admin/stats/
 
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "message": "Notification marked as read."
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Mark All Notifications as Read
-**POST** `/api/v1/notifications/read-all/`
-
-Marks all notifications as read.
-
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "status": "success",
-  "message": "All notifications marked as read."
-}
-```
-
----
-
-### Get Notification Preferences
+### notifications_preferences_list
 **GET** `/api/v1/notifications/preferences/`
 
-Gets the authenticated user's notification preferences.
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
 
-**Authentication Required:** Yes
-
-**Example Response:** `200 OK`
-```json
-{
-  "count": 6,
-  "results": [
-    {
-      "id": "q50e8400-e29b-41d4-a716-446655440000",
-      "user": "550e8400-e29b-41d4-a716-446655440000",
-      "notification_type": "assignment",
-      "email_enabled": true,
-      "push_enabled": true,
-      "in_app_enabled": true
-    }
-  ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-### Update Notification Preference
-**PATCH** `/api/v1/notifications/preferences/{preference_id}/`
+### notifications_preferences_create
+**POST** `/api/v1/notifications/preferences/`
 
-Updates a notification preference.
-
-**Authentication Required:** Yes
-
-**Request Body (all fields optional):**
-| Field | Type | Description |
-|-------|------|-------------|
-| email_enabled | boolean | Enable email notifications |
-| push_enabled | boolean | Enable push notifications |
-| in_app_enabled | boolean | Enable in-app notifications |
+**Responses:**
+- **201**: 
 
 ---
 
-## Common Response Formats
+### notifications_preferences_update
+**PUT** `/api/v1/notifications/preferences/{id}/`
 
-### Success Response
-```json
-{
-  "status": "success",
-  "data": { ... },
-  "message": "Optional success message"
-}
-```
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
 
-### Error Response
-```json
-{
-  "status": "error",
-  "message": "Error description",
-  "errors": {
-    "field_name": ["Error message 1", "Error message 2"]
-  }
-}
-```
-
-### Paginated Response
-```json
-{
-  "count": 100,
-  "next": "/api/v1/endpoint/?page=2",
-  "previous": null,
-  "results": [ ... ]
-}
-```
+**Responses:**
+- **200**: 
 
 ---
 
-## Status Codes
+### notifications_preferences_partial_update
+**PATCH** `/api/v1/notifications/preferences/{id}/`
 
-| Code | Meaning |
-|------|---------|
-| 200 | OK - Request succeeded |
-| 201 | Created - Resource created successfully |
-| 204 | No Content - Request succeeded, no content returned |
-| 400 | Bad Request - Invalid request data |
-| 401 | Unauthorized - Authentication required |
-| 403 | Forbidden - Insufficient permissions |
-| 404 | Not Found - Resource not found |
-| 500 | Internal Server Error - Server error |
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
 
 ---
 
-## Authentication Headers
+### notifications_read_all_create
+**POST** `/api/v1/notifications/read-all/`
 
-All authenticated endpoints require a JWT token in the Authorization header:
+POST /api/v1/notifications/read-all/
 
-```
-Authorization: Bearer <access_token>
-```
-
----
-
-## Rate Limiting
-
-The API implements rate limiting:
-- **Authenticated users:** 1000 requests/hour
-- **Anonymous users:** 100 requests/hour
-
-Rate limit headers are included in responses:
-```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1709380800
-```
+**Responses:**
+- **200**: 
 
 ---
 
-## Filtering & Pagination
+### notifications_unread_count_retrieve
+**GET** `/api/v1/notifications/unread-count/`
 
-### Filtering
-Use query parameters to filter results:
-```
-GET /api/v1/users/?role=student&is_active=true
-```
+GET /api/v1/notifications/unread-count/
 
-### Searching
-Use the `search` parameter:
-```
-GET /api/v1/users/?search=john
-```
-
-### Ordering
-Use the `ordering` parameter:
-```
-GET /api/v1/users/?ordering=-created_at
-```
-Use `-` prefix for descending order.
-
-### Pagination
-Default page size is 20. Navigate using `next` and `previous` URLs in responses.
+**Responses:**
+- **200**: 
 
 ---
 
-## API Schema & Documentation
+## Root
 
-- **OpenAPI Schema:** `/api/schema/`
-- **Swagger UI:** `/api/docs/`
-- **ReDoc:** `/api/redoc/`
+### root_retrieve
+**GET** `/api/v1/`
+
+API root — health check and endpoint overview.
+
+**Responses:**
+- **200**: 
 
 ---
 
-**Last Updated:** March 2, 2026  
-**API Version:** 1.0
+## Timetable
+
+### timetable_list
+**GET** `/api/v1/timetable/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| day_of_week | query | No | integer | * `0` - Monday * `1` - Tuesday * `2` - Wednesday * `3` - Thursday * `4` - Friday * `5` - Saturday * `6` - Sunday |
+| is_active | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| room | query | No | string |  |
+| search | query | No | string | A search term. |
+| semester | query | No | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_create
+**POST** `/api/v1/timetable/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### timetable_retrieve
+**GET** `/api/v1/timetable/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_update
+**PUT** `/api/v1/timetable/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_partial_update
+**PATCH** `/api/v1/timetable/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_destroy
+**DELETE** `/api/v1/timetable/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### timetable_conflicts_retrieve
+**GET** `/api/v1/timetable/conflicts/`
+
+GET /api/v1/timetable/conflicts/ — check room/faculty conflicts.
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_me_list
+**GET** `/api/v1/timetable/me/`
+
+GET /api/v1/timetable/me/ — student or faculty timetable.
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_rooms_list
+**GET** `/api/v1/timetable/rooms/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| is_available | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| room_type | query | No | string | * `classroom` - Classroom * `lab` - Laboratory * `auditorium` - Auditorium * `conference` - Conference Room |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_rooms_create
+**POST** `/api/v1/timetable/rooms/`
+
+**Responses:**
+- **201**: 
+
+---
+
+### timetable_rooms_retrieve
+**GET** `/api/v1/timetable/rooms/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_rooms_update
+**PUT** `/api/v1/timetable/rooms/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_rooms_partial_update
+**PATCH** `/api/v1/timetable/rooms/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### timetable_rooms_destroy
+**DELETE** `/api/v1/timetable/rooms/{id}/`
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+## Users & Accounts
+
+### users_list
+**GET** `/api/v1/users/`
+
+GET /api/v1/users/ — List users (admin).
+POST /api/v1/users/ — Create user (admin).
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| department | query | No | string |  |
+| is_active | query | No | boolean |  |
+| ordering | query | No | string | Which field to use when ordering the results. |
+| page | query | No | integer | A page number within the paginated result set. |
+| role | query | No | string | * `admin` - Admin * `faculty` - Faculty * `student` - Student |
+| search | query | No | string | A search term. |
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_create
+**POST** `/api/v1/users/`
+
+GET /api/v1/users/ — List users (admin).
+POST /api/v1/users/ — Create user (admin).
+
+**Responses:**
+- **201**: 
+
+---
+
+### users_retrieve
+**GET** `/api/v1/users/{id}/`
+
+GET/PATCH/DELETE /api/v1/users/{id}/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_update
+**PUT** `/api/v1/users/{id}/`
+
+GET/PATCH/DELETE /api/v1/users/{id}/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_partial_update
+**PATCH** `/api/v1/users/{id}/`
+
+GET/PATCH/DELETE /api/v1/users/{id}/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_destroy
+**DELETE** `/api/v1/users/{id}/`
+
+GET/PATCH/DELETE /api/v1/users/{id}/
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **204**: No response body
+
+---
+
+### users_reset_password_create
+**POST** `/api/v1/users/{id}/reset-password/`
+
+POST /api/v1/users/{id}/reset-password/ — Admin resets a user's password.
+
+**Parameters:**
+| Name | In | Required | Type | Description |
+|------|----|----------|------|-------------|
+| id | path | Yes | string |  |
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_me_retrieve
+**GET** `/api/v1/users/me/`
+
+GET/PATCH /api/v1/users/me/ — Current user profile.
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_me_update
+**PUT** `/api/v1/users/me/`
+
+GET/PATCH /api/v1/users/me/ — Current user profile.
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_me_partial_update
+**PATCH** `/api/v1/users/me/`
+
+GET/PATCH /api/v1/users/me/ — Current user profile.
+
+**Responses:**
+- **200**: 
+
+---
+
+### users_me_avatar_create
+**POST** `/api/v1/users/me/avatar/`
+
+POST /api/v1/users/me/avatar/
+
+**Responses:**
+- **200**: 
+
+---
+
