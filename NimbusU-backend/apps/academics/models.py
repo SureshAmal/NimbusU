@@ -356,3 +356,242 @@ class StudentTask(models.Model):
 
     def __str__(self):
         return f"{self.title} (Student: {self.student})"
+
+
+class DailyQuestion(models.Model):
+    """Daily question created by faculty - MCQ, Single Choice, or Programming."""
+
+    class QuestionType(models.TextChoices):
+        MCQ = "mcq", "Multiple Choice (Multiple Correct)"
+        SINGLE = "single", "Single Choice"
+        PROGRAMMING = "programming", "Programming"
+
+    class DifficultyLevel(models.TextChoices):
+        EASY = "easy", "Easy"
+        MEDIUM = "medium", "Medium"
+        HARD = "hard", "Hard"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=500)
+    description = models.TextField(blank=True, default="")
+    question_type = models.CharField(max_length=20, choices=QuestionType.choices)
+    difficulty = models.CharField(
+        max_length=20, choices=DifficultyLevel.choices, default=DifficultyLevel.MEDIUM
+    )
+    
+    # Question content
+    question_text = models.TextField()
+    options = models.JSONField(
+        null=True, blank=True,
+        help_text="For MCQ/Single: array of {id, text} objects"
+    )
+    correct_answer = models.JSONField(
+        help_text="For MCQ: array of option ids, for Single: single option id, for Programming: expected output"
+    )
+    test_cases = models.JSONField(
+        null=True, blank=True,
+        help_text="For Programming: array of {input, expected_output}"
+    )
+    starter_code = models.TextField(
+        null=True, blank=True,
+        help_text="Optional starter code for programming questions"
+    )
+    language = models.CharField(
+        max_length=50, null=True, blank=True,
+        help_text="Programming language (python, java, c++, etc.)"
+    )
+    
+    # Points and timing
+    points = models.IntegerField(default=1)
+    time_limit_minutes = models.IntegerField(
+        default=30, help_text="Time limit in minutes for solving"
+    )
+    
+    # Scheduling
+    scheduled_date = models.DateField(
+        help_text="Date when question should be available"
+    )
+    start_time = models.TimeField(
+        null=True, blank=True,
+        help_text="Specific start time (optional)"
+    )
+    end_time = models.TimeField(
+        null=True, blank=True,
+        help_text="Specific end time (optional)"
+    )
+    is_active = models.BooleanField(default=True)
+    
+    # Metadata
+    course_offering = models.ForeignKey(
+        CourseOffering,
+        on_delete=models.CASCADE,
+        related_name="daily_questions",
+        null=True, blank=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="created_questions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "daily_questions"
+        ordering = ["-scheduled_date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.question_type}) - {self.scheduled_date}"
+
+
+class DailyQuestionAssignment(models.Model):
+    """Assignment of daily question to specific students (can be from different batches)."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ASSIGNED = "assigned", "Assigned"
+        STARTED = "started", "Started"
+        SUBMITTED = "submitted", "Submitted"
+        GRADED = "graded", "Graded"
+        EXPIRED = "expired", "Expired"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.ForeignKey(
+        DailyQuestion,
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="question_assignments",
+    )
+    
+    # Batch info for tracking
+    batch = models.CharField(
+        max_length=50, null=True, blank=True,
+        help_text="Student's batch when assigned"
+    )
+    
+    # Status tracking
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
+    
+    # Timing (anti-cheat)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    time_taken_seconds = models.IntegerField(
+        null=True, blank=True,
+        help_text="Time taken in seconds from start to submit"
+    )
+    
+    # Points
+    points_earned = models.IntegerField(default=0)
+    is_correct = models.BooleanField(default=False)
+    
+    # Validity
+    is_valid = models.BooleanField(
+        default=True,
+        help_text="If false, submission was flagged as cheating"
+    )
+    invalid_reason = models.CharField(
+        max_length=500, null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "daily_question_assignments"
+        unique_together = ["question", "student"]
+        ordering = ["-assigned_at"]
+
+    def __str__(self):
+        return f"{self.question.title} -> {self.student.full_name} ({self.status})"
+
+
+class DailyQuestionResponse(models.Model):
+    """Student's response to a daily question."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment = models.OneToOneField(
+        DailyQuestionAssignment,
+        on_delete=models.CASCADE,
+        related_name="response",
+    )
+    
+    # Response content
+    selected_options = models.JSONField(
+        null=True, blank=True,
+        help_text="For MCQ/Single: array of selected option ids"
+    )
+    code_answer = models.TextField(
+        null=True, blank=True,
+        help_text="For Programming: student's code submission"
+    )
+    output_result = models.TextField(
+        null=True, blank=True,
+        help_text="Actual output from running code"
+    )
+    is_correct = models.BooleanField(default=False)
+    marks_obtained = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    
+    # Anti-cheat: IP and device info
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    
+    # Verification
+    is_manually_verified = models.BooleanField(default=False)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="verified_responses",
+    )
+    verification_notes = models.TextField(null=True, blank=True)
+    
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "daily_question_responses"
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"Response by {self.assignment.student.full_name} for {self.assignment.question.title}"
+
+
+class StudentDailyQuestionPerformance(models.Model):
+    """Aggregated performance tracking for student's daily questions."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="dq_performance",
+    )
+    
+    # Time period
+    date = models.DateField()
+    
+    # Stats
+    total_assigned = models.IntegerField(default=0)
+    total_submitted = models.IntegerField(default=0)
+    total_correct = models.IntegerField(default=0)
+    total_points_earned = models.IntegerField(default=0)
+    total_time_seconds = models.IntegerField(default=0)
+    
+    # Streaks
+    current_streak = models.IntegerField(
+        default=0,
+        help_text="Consecutive days of correct submissions"
+    )
+    longest_streak = models.IntegerField(default=0)
+    
+    class Meta:
+        db_table = "student_dq_performance"
+        unique_together = ["student", "date"]
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.date} - {self.total_points_earned} pts"

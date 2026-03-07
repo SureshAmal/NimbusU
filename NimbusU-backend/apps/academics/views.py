@@ -15,7 +15,9 @@ from apps.accounts.serializers import UserListSerializer
 
 from .models import (
     AcademicEvent, Course, CourseOffering, CoursePrerequisite,
-    Department, Enrollment, Grade, Program, School, Semester, StudentTask
+    Department, Enrollment, Grade, Program, School, Semester, StudentTask,
+    DailyQuestion, DailyQuestionAssignment, DailyQuestionResponse,
+    StudentDailyQuestionPerformance
 )
 from .serializers import (
     CourseOfferingSerializer,
@@ -30,6 +32,14 @@ from .serializers import (
     SemesterSerializer,
     AcademicEventSerializer,
     StudentTaskSerializer,
+    DailyQuestionSerializer,
+    DailyQuestionListSerializer,
+    DailyQuestionAssignmentSerializer,
+    DailyQuestionAssignmentCreateSerializer,
+    DailyQuestionAssignmentByBatchSerializer,
+    DailyQuestionResponseSerializer,
+    DailyQuestionSubmitSerializer,
+    StudentDailyQuestionPerformanceSerializer,
 )
 
 User = get_user_model()
@@ -661,3 +671,461 @@ class StudentTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return StudentTask.objects.filter(student=self.request.user)
+
+
+# ─── Daily Questions ───────────────────────────────────────────────────────
+
+class DailyQuestionListCreateView(generics.ListCreateAPIView):
+    """GET/POST /api/v1/academics/daily-questions/"""
+    serializer_class = DailyQuestionListSerializer
+    filterset_fields = ["question_type", "difficulty", "scheduled_date", "is_active"]
+    
+    def get_queryset(self):
+        qs = DailyQuestion.objects.select_related("created_by", "course_offering").all()
+        
+        # Students only see active questions scheduled for today or past
+        if self.request.user.role == "student":
+            from django.utils import timezone
+            from datetime import timedelta
+            today = timezone.now().date()
+            qs = qs.filter(is_active=True, scheduled_date__lte=today)
+        return qs
+    
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return DailyQuestionSerializer
+        return DailyQuestionListSerializer
+    
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
+        return [permissions.IsAuthenticated()]
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class DailyQuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """GET/PATCH/DELETE /api/v1/academics/daily-questions/<id>/"""
+    serializer_class = DailyQuestionSerializer
+    
+    def get_queryset(self):
+        return DailyQuestion.objects.select_related("created_by", "course_offering").all()
+    
+    def get_permissions(self):
+        if self.request.method in ("PATCH", "PUT", "DELETE"):
+            return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
+        return [permissions.IsAuthenticated()]
+
+
+class DailyQuestionAssignView(generics.CreateAPIView):
+    """POST /api/v1/academics/daily-questions/<id>/assign/ - Assign question to students."""
+    serializer_class = DailyQuestionAssignmentCreateSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrFaculty]
+    
+    def create(self, request, *args, **kwargs):
+        question_id = kwargs.get("pk")
+        try:
+            question = DailyQuestion.objects.get(id=question_id)
+        except DailyQuestion.DoesNotExist:
+            return Response(
+                {"detail": "Question not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        student_ids = serializer.validated_data["student_ids"]
+        batch = serializer.validated_data.get("batch", "")
+        
+        # Get students
+        students = User.objects.filter(id__in=student_ids, role="student")
+        
+        # Create assignments
+        assignments = []
+        for student in students:
+            # Get student's batch if not provided
+            student_batch = batch
+            if not student_batch and hasattr(student, 'student_profile'):
+                student_batch = student.student_profile.batch or ""
+            
+            # Check if already assigned
+            if not DailyQuestionAssignment.objects.filter(
+                question=question, student=student
+            ).exists():
+                assignments.append(
+                    DailyQuestionAssignment(
+                        question=question,
+                        student=student,
+                        batch=student_batch,
+                        status=DailyQuestionAssignment.Status.ASSIGNED
+                    )
+                )
+        
+        created = DailyQuestionAssignment.objects.bulk_create(assignments)
+        
+        # Create notification for assigned students
+        from apps.communications.models import Notification
+        notifications = [
+            Notification(
+                user=student,
+                title="New Daily Question",
+                message=f"You have been assigned a new question: {question.title}",
+                notification_type="daily_question",
+                link=f"/academics/daily-questions/{question.id}"
+            )
+            for student in students
+        ]
+        Notification.objects.bulk_create(notifications, ignore_conflicts=True)
+        
+        return Response(
+            {"status": "success", "message": f"{len(created)} students assigned"},
+            status=status.HTTP_201_CREATED
+        )
+
+
+class DailyQuestionAssignByBatchView(generics.CreateAPIView):
+    """POST /api/v1/academics/daily-questions/assign-by-batch/ - Assign to students by batch."""
+    serializer_class = DailyQuestionAssignmentByBatchSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrFaculty]
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        question = serializer.validated_data["question"]
+        batches = serializer.validated_data["batches"]
+        course_offering = serializer.validated_data.get("course_offering")
+        
+        # Get students from these batches
+        from apps.accounts.models import StudentProfile
+        student_profiles = StudentProfile.objects.filter(batch__in=batches)
+        if course_offering:
+            # Also filter by enrolled students in the course
+            enrolled_student_ids = Enrollment.objects.filter(
+                course_offering=course_offering, status="active"
+            ).values_list("student_id", flat=True)
+            student_profiles = student_profiles.filter(user_id__in=enrolled_student_ids)
+        
+        students = User.objects.filter(
+            id__in=student_profiles.values_list("user_id", flat=True),
+            role="student"
+        )
+        
+        # Create assignments
+        assignments = []
+        for profile in student_profiles:
+            if not DailyQuestionAssignment.objects.filter(
+                question=question, student_id=profile.user_id
+            ).exists():
+                assignments.append(
+                    DailyQuestionAssignment(
+                        question=question,
+                        student_id=profile.user_id,
+                        batch=profile.batch,
+                        status=DailyQuestionAssignment.Status.ASSIGNED
+                    )
+                )
+        
+        created = DailyQuestionAssignment.objects.bulk_create(assignments)
+        
+        # Create notifications
+        from apps.communications.models import Notification
+        notifications = [
+            Notification(
+                user_id=profile.user_id,
+                title="New Daily Question",
+                message=f"You have been assigned: {question.title}",
+                notification_type="daily_question",
+                link=f"/academics/daily-questions/{question.id}"
+            )
+            for profile in student_profiles
+        ]
+        Notification.objects.bulk_create(notifications, ignore_conflicts=True)
+        
+        return Response(
+            {"status": "success", "message": f"{len(created)} students from {len(batches)} batches assigned"},
+            status=status.HTTP_201_CREATED
+        )
+
+
+class MyQuestionAssignmentsView(generics.ListAPIView):
+    """GET /api/v1/academics/daily-questions/my-assignments/ - Student's assigned questions."""
+    serializer_class = DailyQuestionAssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        qs = DailyQuestionAssignment.objects.filter(
+            student=self.request.user
+        ).select_related("question")
+        
+        # Filter by status
+        status = self.request.query_params.get("status")
+        if status:
+            qs = qs.filter(status=status)
+        
+        # Filter: only pending/assigned if before start time
+        from django.utils import timezone
+        now = timezone.now()
+        for assignment in qs:
+            q = assignment.question
+            if q.start_time and now.time() < q.start_time:
+                # Question hasn't started yet
+                assignment.status = DailyQuestionAssignment.Status.PENDING
+                assignment.save(update_fields=["status"])
+        
+        return qs
+
+
+class DailyQuestionStartView(APIView):
+    """POST /api/v1/academics/daily-questions/<id>/start/ - Student starts a question."""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, pk):
+        try:
+            assignment = DailyQuestionAssignment.objects.get(
+                id=pk, student=request.user
+            )
+        except DailyQuestionAssignment.DoesNotExist:
+            return Response(
+                {"detail": "Assignment not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if already started
+        if assignment.status in [
+            DailyQuestionAssignment.Status.SUBMITTED,
+            DailyQuestionAssignment.Status.GRADED
+        ]:
+            return Response(
+                {"detail": "Question already submitted"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if within time window
+        from django.utils import timezone
+        now = timezone.now()
+        
+        if assignment.question.start_time and now.time() < assignment.question.start_time:
+            return Response(
+                {"detail": "Question is not available yet"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if assignment.question.end_time and now.time() > assignment.question.end_time:
+            assignment.status = DailyQuestionAssignment.Status.EXPIRED
+            assignment.save(update_fields=["status"])
+            return Response(
+                {"detail": "Question has expired"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Record start time
+        assignment.status = DailyQuestionAssignment.Status.STARTED
+        assignment.started_at = now
+        assignment.save(update_fields=["status", "started_at"])
+        
+        return Response(
+            {"status": "success", "started_at": now.isoformat()},
+            status=status.HTTP_200_OK
+        )
+
+
+class DailyQuestionSubmitView(APIView):
+    """POST /api/v1/academics/daily-questions/<id>/submit/ - Student submits answer."""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, pk):
+        serializer = DailyQuestionSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            assignment = DailyQuestionAssignment.objects.get(
+                id=serializer.validated_data["assignment_id"],
+                student=request.user
+            )
+        except DailyQuestionAssignment.DoesNotExist:
+            return Response(
+                {"detail": "Assignment not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if assignment.status not in [
+            DailyQuestionAssignment.Status.STARTED,
+            DailyQuestionAssignment.Status.ASSIGNED
+        ]:
+            return Response(
+                {"detail": "Cannot submit - question not started or already submitted"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check time limit
+        from django.utils import timezone
+        now = timezone.now()
+        
+        if assignment.started_at:
+            time_diff = (now - assignment.started_at).total_seconds()
+            time_limit_seconds = assignment.question.time_limit_minutes * 60
+            
+            if time_diff > time_limit_seconds:
+                assignment.status = DailyQuestionAssignment.Status.EXPIRED
+                assignment.save(update_fields=["status"])
+                return Response(
+                    {"detail": "Time limit exceeded"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            assignment.time_taken_seconds = int(time_diff)
+        
+        # Check answer
+        question = assignment.question
+        is_correct = False
+        marks_obtained = 0
+        
+        if question.question_type in [DailyQuestion.QuestionType.MCQ, DailyQuestion.QuestionType.SINGLE]:
+            selected = set(serializer.validated_data.get("selected_options", []))
+            correct = set(question.correct_answer)
+            is_correct = selected == correct
+        elif question.question_type == DailyQuestion.QuestionType.PROGRAMMING:
+            # For programming, we just store the code - needs manual grading
+            is_correct = False
+        
+        if is_correct:
+            marks_obtained = question.points
+            assignment.points_earned = marks_obtained
+            assignment.is_correct = True
+        
+        # Create response record
+        response = DailyQuestionResponse.objects.create(
+            assignment=assignment,
+            selected_options=serializer.validated_data.get("selected_options"),
+            code_answer=serializer.validated_data.get("code_answer", ""),
+            is_correct=is_correct,
+            marks_obtained=marks_obtained,
+            ip_address=self.get_client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+        )
+        
+        # Update assignment
+        assignment.status = DailyQuestionAssignment.Status.SUBMITTED
+        assignment.submitted_at = now
+        assignment.save()
+        
+        return Response(
+            {
+                "status": "success",
+                "is_correct": is_correct,
+                "marks_obtained": marks_obtained,
+                "time_taken": assignment.time_taken_seconds,
+            },
+            status=status.HTTP_200_OK
+        )
+    
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            return x_forwarded_for.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")
+
+
+class DailyQuestionGradingView(APIView):
+    """POST /api/v1/academics/daily-questions/<id>/grade/ - Faculty grades a submission."""
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrFaculty]
+    
+    def post(self, request, pk):
+        try:
+            assignment = DailyQuestionAssignment.objects.get(id=pk)
+        except DailyQuestionAssignment.DoesNotExist:
+            return Response(
+                {"detail": "Assignment not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        marks = request.data.get("marks", 0)
+        is_correct = request.data.get("is_correct", False)
+        notes = request.data.get("notes", "")
+        
+        assignment.points_earned = marks
+        assignment.is_correct = is_correct
+        assignment.status = DailyQuestionAssignment.Status.GRADED
+        assignment.save()
+        
+        # Update response if exists
+        if hasattr(assignment, "response"):
+            assignment.response.marks_obtained = marks
+            assignment.response.is_correct = is_correct
+            assignment.response.is_manually_verified = True
+            assignment.response.verified_by = request.user
+            assignment.response.verification_notes = notes
+            assignment.response.save()
+        
+        return Response(
+            {"status": "success", "marks_obtained": marks},
+            status=status.HTTP_200_OK
+        )
+
+
+class StudentQuestionPerformanceView(generics.ListAPIView):
+    """GET /api/v1/academics/daily-questions/performance/ - View performance stats."""
+    serializer_class = StudentDailyQuestionPerformanceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        qs = StudentDailyQuestionPerformance.objects.filter(student=self.request.user)
+        
+        # Filter by date range
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+        
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+        
+        return qs.order_by("-date")
+
+
+class FacultyQuestionStatsView(APIView):
+    """GET /api/v1/academics/daily-questions/stats/ - Faculty view of all student performance."""
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrFaculty]
+    
+    def get(self, request):
+        question_id = request.query_params.get("question_id")
+        student_id = request.query_params.get("student_id")
+        
+        qs = DailyQuestionAssignment.objects.select_related(
+            "question", "student"
+        )
+        
+        if question_id:
+            qs = qs.filter(question_id=question_id)
+        
+        if student_id:
+            qs = qs.filter(student_id=student_id)
+        
+        total = qs.count()
+        submitted = qs.filter(status__in=[
+            DailyQuestionAssignment.Status.SUBMITTED,
+            DailyQuestionAssignment.Status.GRADED
+        ]).count()
+        correct = qs.filter(is_correct=True).count()
+        pending = qs.filter(status__in=[
+            DailyQuestionAssignment.Status.PENDING,
+            DailyQuestionAssignment.Status.ASSIGNED
+        ]).count()
+        
+        avg_time = qs.exclude(
+            time_taken_seconds__isnull=True
+        ).aggregate(models.Avg("time_taken_seconds"))["time_taken_seconds__avg"] or 0
+        
+        return Response(
+            {
+                "total_assigned": total,
+                "total_submitted": submitted,
+                "total_correct": correct,
+                "total_pending": pending,
+                "average_time_seconds": round(avg_time, 2),
+                "accuracy_rate": round(correct / submitted * 100, 2) if submitted else 0,
+            }
+        )

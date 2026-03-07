@@ -48,4 +48,15 @@ urlpatterns = [
     # Student Tasks
     path("academics/tasks/", views.StudentTaskViewSet.as_view(), name="task-list-create"),
     path("academics/tasks/<uuid:pk>/", views.StudentTaskDetailView.as_view(), name="task-detail"),
+    # Daily Questions
+    path("academics/daily-questions/", views.DailyQuestionListCreateView.as_view(), name="dq-list-create"),
+    path("academics/daily-questions/<uuid:pk>/", views.DailyQuestionDetailView.as_view(), name="dq-detail"),
+    path("academics/daily-questions/<uuid:pk>/assign/", views.DailyQuestionAssignView.as_view(), name="dq-assign"),
+    path("academics/daily-questions/<uuid:pk>/start/", views.DailyQuestionStartView.as_view(), name="dq-start"),
+    path("academics/daily-questions/<uuid:pk>/submit/", views.DailyQuestionSubmitView.as_view(), name="dq-submit"),
+    path("academics/daily-questions/<uuid:pk>/grade/", views.DailyQuestionGradingView.as_view(), name="dq-grade"),
+    path("academics/daily-questions/assign-by-batch/", views.DailyQuestionAssignByBatchView.as_view(), name="dq-assign-batch"),
+    path("academics/daily-questions/my-assignments/", views.MyQuestionAssignmentsView.as_view(), name="dq-my-assignments"),
+    path("academics/daily-questions/performance/", views.StudentQuestionPerformanceView.as_view(), name="dq-performance"),
+    path("academics/daily-questions/stats/", views.FacultyQuestionStatsView.as_view(), name="dq-stats"),
 ]

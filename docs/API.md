@@ -6908,3 +6908,110 @@ POST /api/v1/users/ — Create user (admin).
 
 ---
 
+# WebSocket APIs
+
+WebSocket endpoints require authentication. The JWT token must be passed in the connection URL as a query parameter.
+
+**Base URL**: `ws://<domain>/ws/` or `wss://<domain>/ws/`
+**Authentication**: Append `?token=<JWT_ACCESS_TOKEN>` to the WebSocket URL.
+
+## `ws/notifications/`
+
+**Summary**: Connects to the real-time notification stream for the authenticated user.
+
+#### Connection
+```javascript
+const socket = new WebSocket('ws://localhost:8000/ws/notifications/?token=eyJhbG...');
+```
+
+#### Server-to-Client Messages
+The server pushes JSON-formatted messages when a new notification is generated for the user.
+
+**Payload Format**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `string` | Always `"new_notification"` |
+| `notification` | `object` | The notification object containing details |
+
+**Example Message**:
+```json
+{
+  "type": "new_notification",
+  "notification": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "New Assignment",
+    "message": "Assignment 1 has been posted.",
+    "is_read": false,
+    "created_at": "2023-10-23T12:00:00Z"
+  }
+}
+```
+
+---
+
+## `ws/chat/`
+
+**Summary**: Connects to the real-time global chat stream. 
+
+#### Connection
+```javascript
+const socket = new WebSocket('ws://localhost:8000/ws/chat/?token=eyJhbG...');
+```
+
+#### Server-to-Client Messages
+The server pushes JSON-formatted messages when a new chat message is sent.
+
+**Payload Format**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `string` | Always `"new_message"` |
+| `message` | `object` | The chat message object containing details |
+
+**Example Message**:
+```json
+{
+  "type": "new_message",
+  "message": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "sender_name": "John Doe",
+    "role": "faculty",
+    "subject": "Office Hours",
+    "content": "I will be holding office hours today at 3 PM.",
+    "created_at": "2023-10-23T12:00:00Z"
+  }
+}
+```
+
+---
+
+## `ws/timetable/`
+
+**Summary**: Connects to real-time timetable updates (e.g., class cancellations, room changes).
+
+#### Connection
+```javascript
+const socket = new WebSocket('ws://localhost:8000/ws/timetable/?token=eyJhbG...');
+```
+
+#### Server-to-Client Messages
+The server pushes JSON-formatted messages when a relevant timetable event is updated or triggered.
+
+**Payload Format**:
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `string` | Always `"timetable_update"` |
+| `event` | `object` | The timetable event details |
+
+**Example Message**:
+```json
+{
+  "type": "timetable_update",
+  "event": {
+    "action": "updated",
+    "class_id": "123e4567...",
+    "course_name": "CS101",
+    "new_room": "Room 5B",
+    "time": "10:00 AM"
+  }
+}
+```

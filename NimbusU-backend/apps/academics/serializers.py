@@ -8,7 +8,9 @@ User = get_user_model()
 
 from .models import (
     AcademicEvent, Course, CourseOffering, CoursePrerequisite,
-    Department, Enrollment, Grade, Program, School, Semester, StudentTask
+    Department, Enrollment, Grade, Program, School, Semester, StudentTask,
+    DailyQuestion, DailyQuestionAssignment, DailyQuestionResponse,
+    StudentDailyQuestionPerformance
 )
 
 
@@ -187,4 +189,121 @@ class StudentTaskSerializer(serializers.ModelSerializer):
             "created_at", "updated_at"
         ]
         read_only_fields = ["id", "student", "created_at", "updated_at"]
+
+
+class DailyQuestionSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source="created_by.full_name", read_only=True)
+    course_name = serializers.CharField(source="course_offering.course.name", read_only=True, default=None)
+    question_type_display = serializers.CharField(source="get_question_type_display", read_only=True)
+    difficulty_display = serializers.CharField(source="get_difficulty_display", read_only=True)
+    
+    class Meta:
+        model = DailyQuestion
+        fields = [
+            "id", "title", "description", "question_type", "question_type_display",
+            "difficulty", "difficulty_display", "question_text", "options",
+            "correct_answer", "test_cases", "starter_code", "language",
+            "points", "time_limit_minutes", "scheduled_date", "start_time", "end_time",
+            "is_active", "course_offering", "course_name", "created_by", "created_by_name",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_by", "created_at", "updated_at"]
+
+
+class DailyQuestionListSerializer(serializers.ModelSerializer):
+    """Serializer for listing questions - hides correct answers."""
+    created_by_name = serializers.CharField(source="created_by.full_name", read_only=True)
+    course_name = serializers.CharField(source="course_offering.course.name", read_only=True, default=None)
+    question_type_display = serializers.CharField(source="get_question_type_display", read_only=True)
+    difficulty_display = serializers.CharField(source="get_difficulty_display", read_only=True)
+    total_assignments = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DailyQuestion
+        fields = [
+            "id", "title", "description", "question_type", "question_type_display",
+            "difficulty", "difficulty_display", "points", "time_limit_minutes",
+            "scheduled_date", "start_time", "end_time", "is_active",
+            "course_offering", "course_name", "created_by", "created_by_name",
+            "created_at", "total_assignments",
+        ]
+        read_only_fields = ["id", "created_by", "created_at"]
+    
+    @extend_schema_field(serializers.IntegerField)
+    def get_total_assignments(self, obj) -> int:
+        return obj.assignments.count()
+
+
+class DailyQuestionAssignmentSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.full_name", read_only=True)
+    question_title = serializers.CharField(source="question.title", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    
+    class Meta:
+        model = DailyQuestionAssignment
+        fields = [
+            "id", "question", "question_title", "student", "student_name",
+            "batch", "status", "status_display", "assigned_at", "started_at",
+            "submitted_at", "time_taken_seconds", "points_earned", "is_correct",
+            "is_valid", "invalid_reason",
+        ]
+        read_only_fields = ["id", "assigned_at", "started_at", "submitted_at",
+                           "time_taken_seconds", "points_earned", "is_correct"]
+
+
+class DailyQuestionAssignmentCreateSerializer(serializers.Serializer):
+    """Serializer for creating assignments to multiple students."""
+    question = serializers.PrimaryKeyRelatedField(queryset=DailyQuestion.objects.all())
+    student_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        help_text="List of student UUIDs to assign"
+    )
+    batch = serializers.CharField(required=False, allow_blank=True)
+
+
+class DailyQuestionAssignmentByBatchSerializer(serializers.Serializer):
+    """Serializer for assigning question to students by batch."""
+    question = serializers.PrimaryKeyRelatedField(queryset=DailyQuestion.objects.all())
+    batches = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of batch codes (e.g., ['2024-A', '2024-B'])"
+    )
+    course_offering = serializers.PrimaryKeyRelatedField(
+        queryset=CourseOffering.objects.all(), required=False, allow_null=True
+    )
+
+
+class DailyQuestionResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyQuestionResponse
+        fields = [
+            "id", "assignment", "selected_options", "code_answer", "output_result",
+            "is_correct", "marks_obtained", "ip_address", "user_agent",
+            "is_manually_verified", "verified_by", "verification_notes", "submitted_at",
+        ]
+        read_only_fields = ["id", "is_correct", "marks_obtained", "ip_address",
+                           "user_agent", "submitted_at"]
+
+
+class DailyQuestionSubmitSerializer(serializers.Serializer):
+    """Serializer for student to submit their answer."""
+    assignment_id = serializers.UUIDField()
+    selected_options = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    code_answer = serializers.CharField(required=False, allow_blank=True)
+
+
+class StudentDailyQuestionPerformanceSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.full_name", read_only=True)
+    
+    class Meta:
+        model = StudentDailyQuestionPerformance
+        fields = [
+            "id", "student", "student_name", "date",
+            "total_assigned", "total_submitted", "total_correct",
+            "total_points_earned", "total_time_seconds",
+            "current_streak", "longest_streak",
+        ]
+        read_only_fields = ["id"]
 

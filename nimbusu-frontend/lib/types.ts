@@ -541,3 +541,81 @@ export interface DiscussionPost {
     created_at: string;
     updated_at: string;
 }
+
+export interface DailyQuestion {
+    id: string;
+    title: string;
+    description: string;
+    question_type: "mcq" | "single" | "programming";
+    question_type_display: string;
+    difficulty: "easy" | "medium" | "hard";
+    difficulty_display: string;
+    question_text: string;
+    options?: { id: number; text: string }[] | null;
+    correct_answer?: number[] | number | string | null;
+    test_cases?: { input: string; expected_output: string }[] | null;
+    starter_code?: string | null;
+    language?: string | null;
+    points: number;
+    time_limit_minutes: number;
+    scheduled_date: string;
+    start_time?: string | null;
+    end_time?: string | null;
+    is_active: boolean;
+    course_offering?: string | null;
+    course_name?: string | null;
+    created_by: string;
+    created_by_name: string;
+    created_at: string;
+    updated_at: string;
+    total_assignments?: number;
+}
+
+export interface DailyQuestionAssignment {
+    id: string;
+    question: string;
+    question_title: string;
+    student: string;
+    student_name: string;
+    batch?: string | null;
+    status: "pending" | "assigned" | "started" | "submitted" | "graded" | "expired";
+    status_display: string;
+    assigned_at: string;
+    started_at?: string | null;
+    submitted_at?: string | null;
+    time_taken_seconds?: number | null;
+    points_earned: number;
+    is_correct: boolean;
+    is_valid: boolean;
+    invalid_reason?: string | null;
+}
+
+export interface DailyQuestionResponse {
+    id: string;
+    assignment: string;
+    selected_options?: number[] | null;
+    code_answer?: string | null;
+    output_result?: string | null;
+    is_correct: boolean;
+    marks_obtained?: number | null;
+    ip_address?: string | null;
+    user_agent?: string | null;
+    is_manually_verified: boolean;
+    verified_by?: string | null;
+    verification_notes?: string | null;
+    submitted_at: string;
+}
+
+export interface StudentDailyQuestionPerformance {
+    id: string;
+    student: string;
+    student_name: string;
+    date: string;
+    total_assigned: number;
+    total_submitted: number;
+    total_correct: number;
+    total_points_earned: number;
+    total_time_seconds: number;
+    current_streak: number;
+    longest_streak: number;
+}

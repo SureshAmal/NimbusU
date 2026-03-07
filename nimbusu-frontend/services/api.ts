@@ -38,6 +38,9 @@ import type {
     StudentTask,
     DiscussionForum,
     DiscussionPost,
+    DailyQuestion,
+    DailyQuestionAssignment,
+    StudentDailyQuestionPerformance,
 } from "@/lib/types";
 
 /* ─── Auth ────────────────────────────────────────────────────────── */
@@ -511,4 +514,63 @@ export const swapRequestsService = {
 
 export const rootService = {
     healthCheck: () => api.get("/"),
+};
+
+/* ─── Daily Questions ─────────────────────────────────────────────── */
+
+export const dailyQuestionsService = {
+    list: (params?: Record<string, string>) =>
+        api.get<PaginatedResponse<DailyQuestion>>("/academics/daily-questions/", { params }),
+    get: (id: string) => api.get<DailyQuestion>(`/academics/daily-questions/${id}/`),
+    create: (data: Partial<DailyQuestion>) =>
+        api.post<DailyQuestion>("/academics/daily-questions/", data),
+    update: (id: string, data: Partial<DailyQuestion>) =>
+        api.patch<DailyQuestion>(`/academics/daily-questions/${id}/`, data),
+    delete: (id: string) => api.delete(`/academics/daily-questions/${id}/`),
+    
+    assign: (questionId: string, data: { student_ids: string[]; batch?: string }) =>
+        api.post<{ status: string; message: string }>(
+            `/academics/daily-questions/${questionId}/assign/`,
+            data
+        ),
+    assignByBatch: (data: { question: string; batches: string[]; course_offering?: string }) =>
+        api.post<{ status: string; message: string }>(
+            "/academics/daily-questions/assign-by-batch/",
+            data
+        ),
+    
+    start: (assignmentId: string) =>
+        api.post<{ status: string; started_at: string }>(
+            `/academics/daily-questions/${assignmentId}/start/`
+        ),
+    submit: (assignmentId: string, data: { selected_options?: number[]; code_answer?: string }) =>
+        api.post<{ status: string; is_correct: boolean; marks_obtained: number; time_taken: number }>(
+            `/academics/daily-questions/${assignmentId}/submit/`,
+            data
+        ),
+    grade: (assignmentId: string, data: { marks: number; is_correct: boolean; notes?: string }) =>
+        api.post<{ status: string; marks_obtained: number }>(
+            `/academics/daily-questions/${assignmentId}/grade/`,
+            data
+        ),
+    
+    myAssignments: (params?: Record<string, string>) =>
+        api.get<PaginatedResponse<DailyQuestionAssignment>>(
+            "/academics/daily-questions/my-assignments/",
+            { params }
+        ),
+    performance: (params?: Record<string, string>) =>
+        api.get<PaginatedResponse<StudentDailyQuestionPerformance>>(
+            "/academics/daily-questions/performance/",
+            { params }
+        ),
+    stats: (params?: Record<string, string>) =>
+        api.get<{
+            total_assigned: number;
+            total_submitted: number;
+            total_correct: number;
+            total_pending: number;
+            average_time_seconds: number;
+            accuracy_rate: number;
+        }>("/academics/daily-questions/stats/", { params }),
 };
