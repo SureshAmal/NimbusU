@@ -6,6 +6,16 @@ import { usePageHeader } from "@/lib/page-header";
 import { assignmentsService, assignmentGroupsService } from "@/services/api";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +41,8 @@ export default function AssignmentGroupsPage() {
     const [groupName, setGroupName] = useState("");
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
+    const [deleteGroup, setDeleteGroup] = useState<AssignmentGroup | null>(null);
+    const [deletingGroup, setDeletingGroup] = useState(false);
 
     const fetchAll = async () => {
         try {
@@ -92,14 +104,18 @@ export default function AssignmentGroupsPage() {
         }
     };
 
-    const handleDeleteGroup = async (groupId: string) => {
-        if (!confirm("Are you sure you want to delete this group?")) return;
+    const handleDeleteGroup = async () => {
+        if (!deleteGroup) return;
+        setDeletingGroup(true);
         try {
-            await assignmentGroupsService.delete(groupId);
+            await assignmentGroupsService.delete(deleteGroup.id);
             toast.success("Group deleted");
-            setGroups(groups.filter(g => g.id !== groupId));
+            setGroups(groups.filter(g => g.id !== deleteGroup.id));
+            setDeleteGroup(null);
         } catch (error) {
             toast.error("Failed to delete group");
+        } finally {
+            setDeletingGroup(false);
         }
     };
 
@@ -157,7 +173,7 @@ export default function AssignmentGroupsPage() {
                                     <h3 className="font-semibold text-lg">{group.name}</h3>
                                     <p className="text-sm text-muted-foreground">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</p>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteGroup(group.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => setDeleteGroup(group)}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -252,6 +268,31 @@ export default function AssignmentGroupsPage() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog
+                open={!!deleteGroup}
+                onOpenChange={(open) => {
+                    if (!open && !deletingGroup) setDeleteGroup(null);
+                }}
+            >
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete group?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {deleteGroup
+                                ? `This will permanently remove the group “${deleteGroup.name}”.`
+                                : "This will permanently remove this group."} This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deletingGroup}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteGroup} disabled={deletingGroup}>
+                            {deletingGroup && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Delete group
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

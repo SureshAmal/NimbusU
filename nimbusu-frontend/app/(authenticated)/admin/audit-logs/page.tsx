@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ export default function AdminAuditLogsPage() {
 
       try {
         const params: Record<string, string> = {};
+        params.page_size = "1000";
         const q = opts?.searchOverride ?? search;
         if (q) params.search = q;
         const { data } = await auditLogsService.list(params);
@@ -82,6 +84,14 @@ export default function AdminAuditLogsPage() {
     if (actionFilter === "all") return logs;
     return logs.filter((l) => l.action === actionFilter);
   }, [logs, actionFilter]);
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(filteredLogs);
 
   const activeFilters = actionFilter !== "all" ? 1 : 0;
 
@@ -191,7 +201,7 @@ export default function AdminAuditLogsPage() {
                   </Table.Cell>
                 </Table.Row>
               ) : (
-                filteredLogs.map((l) => (
+                paginatedItems.map((l) => (
                   <Table.Row key={l.id} id={l.id}>
                     <Table.Cell className="text-muted-foreground">
                       {l.user_email}
@@ -215,12 +225,16 @@ export default function AdminAuditLogsPage() {
           </Table>
         )}
 
-        <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-          <span>
-            {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""}
-          </span>
-          {activeFilters > 0 && <span>{activeFilters} filter applied</span>}
-        </div>
+        <TablePaginationFooter
+          count={filteredLogs.length}
+          itemLabel="log"
+          activeFiltersLabel={activeFilters > 0 ? `${activeFilters} filter applied` : null}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </TableCard.Root>
     </div>
   );

@@ -8,14 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -32,7 +40,7 @@ import {
 } from "@/components/ui/context-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Building2, Loader2, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Building2, Loader2, Pencil, Trash2, Search, MoreHorizontal } from "lucide-react";
 
 const DEBOUNCE_MS = 400;
 
@@ -60,7 +68,7 @@ export default function AdminSchoolsPage() {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const { data } = await schoolsService.list();
+      const { data } = await schoolsService.list({ page_size: "1000" });
       if (!controller.signal.aborted) setSchools(data.results ?? []);
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -96,11 +104,13 @@ export default function AdminSchoolsPage() {
   };
 
   function openCreate() {
+    setCtxDept(null);
     setEditId(null);
     setForm({ name: "", code: "", dean: null });
     setSheetOpen(true);
   }
   function openEdit(d: School) {
+    setCtxDept(null);
     setEditId(d.id);
     setForm({ name: d.name, code: d.code, dean: d.dean });
     setSheetOpen(true);
@@ -123,6 +133,7 @@ export default function AdminSchoolsPage() {
   }
 
   async function handleDelete(id: string) {
+    setCtxDept(null);
     const prev = [...schools];
     setSchools((d) => d.filter((x) => x.id !== id));
     try {
@@ -143,6 +154,14 @@ export default function AdminSchoolsPage() {
       (d.dean_name ?? "").toLowerCase().includes(q)
     );
   });
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(filtered);
 
   return (
     <div className="space-y-4">
@@ -207,13 +226,18 @@ export default function AdminSchoolsPage() {
                             Created
                           </span>
                         </Table.Head>
+                        <Table.Head>
+                          <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                            Actions
+                          </span>
+                        </Table.Head>
                       </Table.Row>
                     </Table.Header>
                     <Table.Body>
                       {filtered.length === 0 ? (
                         <Table.Row id="empty">
                           <Table.Cell
-                            colSpan={4}
+                            colSpan={5}
                             className="text-center py-8 text-muted-foreground"
                           >
                             <Building2 className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -221,7 +245,7 @@ export default function AdminSchoolsPage() {
                           </Table.Cell>
                         </Table.Row>
                       ) : (
-                        filtered.map((d) => (
+                        paginatedItems.map((d) => (
                           <Table.Row
                             key={d.id}
                             id={d.id}
@@ -242,6 +266,50 @@ export default function AdminSchoolsPage() {
                             <Table.Cell className="text-muted-foreground">
                               {new Date(d.created_at).toLocaleDateString()}
                             </Table.Cell>
+                            <Table.Cell>
+                              <div className="flex w-full items-center justify-start gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hidden sm:inline-flex h-8 w-8"
+                                  onClick={() => openEdit(d)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Edit school</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(d.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete school</span>
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">More actions</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={() => openEdit(d)}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDelete(d.id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </Table.Cell>
                           </Table.Row>
                         ))
                       )}
@@ -250,11 +318,15 @@ export default function AdminSchoolsPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                <span>
-                  {filtered.length} school{filtered.length !== 1 ? "s" : ""}
-                </span>
-              </div>
+              <TablePaginationFooter
+                count={filtered.length}
+                itemLabel="school"
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
             </TableCard.Root>
           </div>
         </ContextMenuTrigger>
@@ -283,15 +355,14 @@ export default function AdminSchoolsPage() {
         </ContextMenuContent>
       </ContextMenu>
 
-      {/* Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{editId ? "Edit" : "Create"} School</SheetTitle>
-            <SheetDescription>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? "Edit" : "Create"} School</DialogTitle>
+            <DialogDescription>
               {editId ? "Update school details." : "Add a new school."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 p-4">
             <div className="space-y-2">
               <Label>Name</Label>
@@ -331,15 +402,15 @@ export default function AdminSchoolsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editId ? "Update" : "Create"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

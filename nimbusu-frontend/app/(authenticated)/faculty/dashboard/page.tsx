@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
-import api from "@/lib/api";
-import { assignmentsService, attendanceService, offeringsService } from "@/services/api";
+import { assignmentsService, attendanceService, offeringsService, timetableService } from "@/services/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, Users, Target, AlertTriangle, PartyPopper } from "lucide-react";
@@ -67,7 +66,7 @@ export default function FacultyDashboardPage() {
         async function fetchData() {
             try {
                 const [ttRes, offRes, assRes] = await Promise.all([
-                    api.get("/timetable/me/"),
+                    timetableService.mine(),
                     offeringsService.list(),
                     assignmentsService.list(),
                 ]);
@@ -82,7 +81,7 @@ export default function FacultyDashboardPage() {
                 const counts: typeof courseStudentCounts = [];
                 for (const o of off.slice(0, 8)) {
                     try {
-                        const { data } = await api.get(`/academics/offerings/${o.id}/students/`);
+                        const { data } = await offeringsService.students(o.id);
                         const students = Array.isArray(data) ? data : (data.results ?? data.data ?? []);
                         counts.push({
                             name: (o.course_name || "Course").split(" ").slice(0, 3).join(" "),

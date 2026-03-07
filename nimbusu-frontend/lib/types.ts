@@ -575,6 +575,16 @@ export interface DailyQuestionAssignment {
     id: string;
     question: string;
     question_title: string;
+    question_type: "mcq" | "single" | "programming";
+    question_text: string;
+    options?: { id: number; text: string }[] | null;
+    starter_code?: string | null;
+    points: number;
+    time_limit_minutes: number;
+    scheduled_date: string;
+    start_time?: string | null;
+    end_time?: string | null;
+    is_active: boolean;
     student: string;
     student_name: string;
     batch?: string | null;

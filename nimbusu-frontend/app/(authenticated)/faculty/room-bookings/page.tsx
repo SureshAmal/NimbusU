@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePageHeader } from "@/lib/page-header";
-import { roomBookingsService } from "@/services/api";
-import api from "@/lib/api";
+import { roomBookingsService, timetableService } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +37,7 @@ export default function FacultyRoomBookingsPage() {
             setLoading(true);
             const [bRes, rRes] = await Promise.all([
                 roomBookingsService.list(user?.id ? { booked_by: user.id } : {}), // Assume API supports filtering by users. Alternatively, fetch all and filter client side.
-                api.get("/timetable/rooms/") // Assuming this endpoint exists, or we ask user to type room name.
+                timetableService.rooms.list() // Fetch list of available rooms
             ]);
 
             // Adjust to filter by user on client side if API doesn't filter

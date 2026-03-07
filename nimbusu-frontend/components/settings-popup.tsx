@@ -699,6 +699,17 @@ export function SettingsPopup() {
 
   function setAllRadii(px: number) {
     const rem = px / 16;
+    if (px <= 0) {
+      setCss("--radius", "0rem");
+      setCss("--radius-sm", "0rem");
+      setCss("--radius-md", "0rem");
+      setCss("--radius-lg", "0rem");
+      setCss("--radius-xl", "0rem");
+      setCss("--radius-2xl", "0rem");
+      setCss("--radius-3xl", "0rem");
+      setCss("--radius-4xl", "0rem");
+      return;
+    }
     setCss("--radius", `${rem}rem`);
     setCss("--radius-sm", `${Math.max(0, rem - 0.25)}rem`);
     setCss("--radius-md", `${Math.max(0, rem - 0.125)}rem`);

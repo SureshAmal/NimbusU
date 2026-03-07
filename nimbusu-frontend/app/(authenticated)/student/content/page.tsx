@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -67,6 +68,7 @@ export default function StudentContentPage() {
 
         try {
             const params: Record<string, string> = {};
+            params.page_size = "1000";
             const q = opts?.searchOverride ?? search;
             if (q) params.search = q;
             const { data } = await contentService.list(params);
@@ -161,6 +163,14 @@ export default function StudentContentPage() {
         if (typeFilter === "all") return items;
         return items.filter((c) => c.content_type === typeFilter);
     }, [items, typeFilter]);
+    const {
+        currentPage,
+        pageSize,
+        totalPages,
+        paginatedItems,
+        setCurrentPage,
+        setPageSize,
+    } = useClientPagination(filteredItems);
 
     const activeFilters = typeFilter !== "all" ? 1 : 0;
 
@@ -218,7 +228,7 @@ export default function StudentContentPage() {
                                         </Table.Row>
                                     </Table.Header>
                                     <Table.Body>
-                                        {filteredItems.length === 0 ? <Table.Row id="empty"><Table.Cell colSpan={5} className="text-center py-8 text-muted-foreground">No content found.</Table.Cell></Table.Row> : filteredItems.map((c) => (
+                                        {filteredItems.length === 0 ? <Table.Row id="empty"><Table.Cell colSpan={5} className="text-center py-8 text-muted-foreground">No content found.</Table.Cell></Table.Row> : paginatedItems.map((c) => (
                                             <Table.Row key={c.id} id={c.id} onContextMenu={() => setContextMenuContent(c)} className="cursor-pointer">
                                                 <Table.Cell className="font-medium flex items-center gap-2">{TYPE_ICONS[c.content_type]} {c.title}</Table.Cell>
                                                 <Table.Cell><Badge variant="secondary">{c.content_type}</Badge></Table.Cell>
@@ -235,10 +245,16 @@ export default function StudentContentPage() {
                                 </Table>
                             )}
 
-                            <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                                <span>{filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""}</span>
-                                {activeFilters > 0 && <span>{activeFilters} filter applied</span>}
-                            </div>
+                            <TablePaginationFooter
+                                count={filteredItems.length}
+                                itemLabel="item"
+                                activeFiltersLabel={activeFilters > 0 ? `${activeFilters} filter applied` : null}
+                                currentPage={currentPage}
+                                pageSize={pageSize}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                onPageSizeChange={setPageSize}
+                            />
                         </TableCard.Root>
                     </div>
                 </ContextMenuTrigger>

@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,6 +38,7 @@ export default function StudentAssignmentsPage() {
 
         try {
             const params: Record<string, string> = {};
+            params.page_size = "1000";
             const q = opts?.searchOverride ?? search;
             if (q) params.search = q;
             const { data } = await assignmentsService.list(params);
@@ -76,6 +78,14 @@ export default function StudentAssignmentsPage() {
         if (typeFilter !== "all") result = result.filter((a) => a.assignment_type === typeFilter);
         return result;
     }, [items, statusFilter, typeFilter]);
+    const {
+        currentPage,
+        pageSize,
+        totalPages,
+        paginatedItems,
+        setCurrentPage,
+        setPageSize,
+    } = useClientPagination(filteredItems);
 
     const activeFilters = (statusFilter !== "all" ? 1 : 0) + (typeFilter !== "all" ? 1 : 0);
 
@@ -149,7 +159,7 @@ export default function StudentAssignmentsPage() {
                         <Table.Body>
                             {filteredItems.length === 0 ? (
                                 <Table.Row id="empty"><Table.Cell colSpan={6} className="text-center py-8 text-muted-foreground">No assignments found.</Table.Cell></Table.Row>
-                            ) : filteredItems.map((a) => {
+                            ) : paginatedItems.map((a) => {
                                 const due = new Date(a.due_date);
                                 const overdue = due < now;
                                 return (
@@ -167,10 +177,16 @@ export default function StudentAssignmentsPage() {
                     </Table>
                 )}
 
-                <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                    <span>{filteredItems.length} assignment{filteredItems.length !== 1 ? "s" : ""}</span>
-                    {activeFilters > 0 && <span>{activeFilters} filter{activeFilters !== 1 ? "s" : ""} applied</span>}
-                </div>
+                <TablePaginationFooter
+                    count={filteredItems.length}
+                    itemLabel="assignment"
+                    activeFiltersLabel={activeFilters > 0 ? `${activeFilters} filter${activeFilters !== 1 ? "s" : ""} applied` : null}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableCard.Root>
         </div>
     );

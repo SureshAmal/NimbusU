@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import api from "@/lib/api";
 import {
   assignmentsService,
   attendanceService,
   contentService,
+  offeringsService,
   timetableService,
   forumsService,
 } from "@/services/api";
@@ -149,13 +149,11 @@ export default function FacultyCourseDetailPage() {
     async function fetch() {
       try {
         const [offRes, studRes, assRes, contRes, fldrRes, forumRes, ttRes] = await Promise.all([
-          api.get(`/academics/offerings/${id}/`),
-          api.get(`/academics/offerings/${id}/students/`),
+          offeringsService.get(id),
+          offeringsService.students(id),
           assignmentsService.list({ course_offering: id }),
           contentService.list({ course_offering: id }),
-          contentService.folders?.list
-            ? contentService.folders.list({ course_offering: id })
-            : api.get("/content/folders/", { params: { course_offering: id } }),
+          contentService.folders.list({ course_offering: id }),
           forumsService.list({ course_offering: id }),
           timetableService.mine(),
         ]);

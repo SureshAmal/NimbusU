@@ -12,12 +12,12 @@ import {
 } from "@/components/application/modern-calendar";
 import { format, parse, setDay, startOfWeek, addWeeks } from "date-fns";
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription,
-} from "@/components/ui/sheet";
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { MapPin, User, Tag, Clock } from "lucide-react";
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -125,11 +125,11 @@ export default function StudentTimetablePage() {
                 />
             </div>
 
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent className="w-[400px] sm:w-[540px]">
-                    <SheetHeader>
-                        <SheetTitle className="text-xl">{selectedEvent?.title}</SheetTitle>
-                        <SheetDescription className="flex items-center gap-2 mt-1">
+            <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+                <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">{selectedEvent?.title}</DialogTitle>
+                        <DialogDescription className="flex items-center gap-2 mt-1">
                             {selectedEvent?.start && selectedEvent?.end && (
                                 <>
                                     <Clock className="h-4 w-4" />
@@ -138,8 +138,8 @@ export default function StudentTimetablePage() {
                                     </span>
                                 </>
                             )}
-                        </SheetDescription>
-                    </SheetHeader>
+                        </DialogDescription>
+                    </DialogHeader>
 
                     {!!selectedEvent?.extendedProps?.entry && (
                         <div className="mt-6 space-y-6">
@@ -168,8 +168,8 @@ export default function StudentTimetablePage() {
                             </div>
                         </div>
                     )}
-                </SheetContent>
-            </Sheet>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

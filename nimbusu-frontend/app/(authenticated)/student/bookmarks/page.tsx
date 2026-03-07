@@ -5,6 +5,7 @@ import { contentService } from "@/services/api";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -79,7 +80,7 @@ export default function StudentBookmarksPage() {
     async (opts?: { showLoading?: boolean }) => {
       if (opts?.showLoading) setInitialLoading(true);
       try {
-        const { data } = await contentService.bookmarks.list();
+        const { data } = await contentService.bookmarks.list({ page_size: "1000" });
         setBookmarks(data.results ?? data ?? []);
       } catch {
         toast.error("Failed to load bookmarks");
@@ -108,6 +109,14 @@ export default function StudentBookmarksPage() {
 
   // Bookmarks are no longer locally filtered since search is now global
   const filtered = bookmarks;
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(filtered);
 
   return (
     <div className="space-y-4">
@@ -227,7 +236,7 @@ export default function StudentBookmarksPage() {
                         </Table.Cell>
                       </Table.Row>
                     ) : (
-                      filtered.map((b) => (
+                      paginatedItems.map((b) => (
                         <Table.Row
                           key={b.id}
                           id={b.id}
@@ -261,11 +270,15 @@ export default function StudentBookmarksPage() {
                 </Table>
               )}
 
-              <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                <span>
-                  {filtered.length} bookmark{filtered.length !== 1 ? "s" : ""}
-                </span>
-              </div>
+              <TablePaginationFooter
+                count={filtered.length}
+                itemLabel="bookmark"
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
             </TableCard.Root>
           </div>
         </ContextMenuTrigger>

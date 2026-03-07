@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   semestersService,
   coursesService,
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
   Select,
   SelectContent,
@@ -24,14 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -39,6 +32,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -59,6 +59,7 @@ import {
   Trash2,
   Upload,
   Download,
+  MoreHorizontal,
 } from "lucide-react";
 import { format } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -121,10 +122,10 @@ export default function AdminAcademicsPage() {
     if (opts?.showLoading) setInitialLoading(true);
     try {
       const [semRes, courseRes, offRes, facRes] = await Promise.all([
-        semestersService.list(),
-        coursesService.list(),
-        offeringsService.list(),
-        usersService.list({ role: "faculty" }),
+        semestersService.list({ page_size: "1000" }),
+        coursesService.list({ page_size: "1000" }),
+        offeringsService.list({ page_size: "1000" }),
+        usersService.list({ role: "faculty", page_size: "1000" }),
       ]);
       setSemesters(semRes.data.results ?? []);
       setCourses(courseRes.data.results ?? []);
@@ -143,6 +144,7 @@ export default function AdminAcademicsPage() {
 
   // ── Semesters ──
   function openSemCreate() {
+    setSemCtx(null);
     setSemEditId(null);
     setSemForm({
       name: "",
@@ -154,6 +156,7 @@ export default function AdminAcademicsPage() {
     setSemSheet(true);
   }
   function openSemEdit(s: Semester) {
+    setSemCtx(null);
     setSemEditId(s.id);
     const sd = new Date(s.start_date).toISOString().split("T")[0];
     const ed = new Date(s.end_date).toISOString().split("T")[0];
@@ -186,6 +189,7 @@ export default function AdminAcademicsPage() {
     }
   }
   async function handleSemDelete(id: string) {
+    setSemCtx(null);
     const prev = [...semesters];
     setSemesters((s) => s.filter((x) => x.id !== id));
     try {
@@ -199,11 +203,13 @@ export default function AdminAcademicsPage() {
 
   // ── Courses ──
   function openCourseCreate() {
+    setCourseCtx(null);
     setCourseEditId(null);
     setCourseForm({ name: "", code: "", credits: 3, description: "" });
     setCourseSheet(true);
   }
   function openCourseEdit(c: Course) {
+    setCourseCtx(null);
     setCourseEditId(c.id);
     setCourseForm({
       name: c.name,
@@ -233,6 +239,7 @@ export default function AdminAcademicsPage() {
     }
   }
   async function handleCourseDelete(id: string) {
+    setCourseCtx(null);
     const prev = [...courses];
     setCourses((c) => c.filter((x) => x.id !== id));
     try {
@@ -246,6 +253,7 @@ export default function AdminAcademicsPage() {
 
   // ── Offerings ──
   function openOfferingCreate() {
+    setOfferingCtx(null);
     setOfferingEditId(null);
     setOfferingForm({
       course: "",
@@ -257,6 +265,7 @@ export default function AdminAcademicsPage() {
     setOfferingSheet(true);
   }
   function openOfferingEdit(o: CourseOffering) {
+    setOfferingCtx(null);
     setOfferingEditId(o.id);
     setOfferingForm({
       course: o.course,
@@ -292,6 +301,7 @@ export default function AdminAcademicsPage() {
     }
   }
   async function handleOfferingDelete(id: string) {
+    setOfferingCtx(null);
     const prev = [...offerings];
     setOfferings((o) => o.filter((x) => x.id !== id));
     try {
@@ -361,6 +371,9 @@ export default function AdminAcademicsPage() {
       o.course_code.toLowerCase().includes(q) ||
       o.faculty_name.toLowerCase().includes(q),
   );
+  const semesterPagination = useClientPagination(filteredSemesters);
+  const coursePagination = useClientPagination(filteredCourses);
+  const offeringPagination = useClientPagination(filteredOfferings);
 
   if (initialLoading) {
     return (
@@ -447,13 +460,18 @@ export default function AdminAcademicsPage() {
                             Status
                           </span>
                         </Table.Head>
+                        <Table.Head>
+                          <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                            Actions
+                          </span>
+                        </Table.Head>
                       </Table.Row>
                     </Table.Header>
                     <Table.Body>
                       {filteredSemesters.length === 0 ? (
                         <Table.Row id="empty-sem">
                           <Table.Cell
-                            colSpan={5}
+                            colSpan={6}
                             className="text-center py-8 text-muted-foreground"
                           >
                             <Calendar className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -461,7 +479,7 @@ export default function AdminAcademicsPage() {
                           </Table.Cell>
                         </Table.Row>
                       ) : (
-                        filteredSemesters.map((s) => (
+                        semesterPagination.paginatedItems.map((s) => (
                           <Table.Row
                             key={s.id}
                             id={s.id}
@@ -487,16 +505,50 @@ export default function AdminAcademicsPage() {
                                 {s.is_current ? "Current" : "Past"}
                               </Badge>
                             </Table.Cell>
+                            <Table.Cell>
+                              <div className="flex w-full items-center justify-start gap-1">
+                                <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex h-8 w-8" onClick={() => openSemEdit(s)}>
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Edit semester</span>
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleSemDelete(s.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete semester</span>
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">More actions</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44">
+                                    <DropdownMenuItem onClick={() => openSemEdit(s)}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit Semester
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleSemDelete(s.id)} className="text-destructive focus:text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </Table.Cell>
                           </Table.Row>
                         ))
                       )}
                     </Table.Body>
                   </Table>
 
-                  <div className="border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                    {filteredSemesters.length} semester
-                    {filteredSemesters.length !== 1 ? "s" : ""}
-                  </div>
+                  <TablePaginationFooter
+                    count={filteredSemesters.length}
+                    itemLabel="semester"
+                    currentPage={semesterPagination.currentPage}
+                    pageSize={semesterPagination.pageSize}
+                    totalPages={semesterPagination.totalPages}
+                    onPageChange={semesterPagination.setCurrentPage}
+                    onPageSizeChange={semesterPagination.setPageSize}
+                  />
                 </TableCard.Root>
               </div>
             </ContextMenuTrigger>
@@ -578,13 +630,18 @@ export default function AdminAcademicsPage() {
                             Credits
                           </span>
                         </Table.Head>
+                        <Table.Head>
+                          <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                            Actions
+                          </span>
+                        </Table.Head>
                       </Table.Row>
                     </Table.Header>
                     <Table.Body>
                       {filteredCourses.length === 0 ? (
                         <Table.Row id="empty-course">
                           <Table.Cell
-                            colSpan={4}
+                            colSpan={5}
                             className="text-center py-8 text-muted-foreground"
                           >
                             <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -592,7 +649,7 @@ export default function AdminAcademicsPage() {
                           </Table.Cell>
                         </Table.Row>
                       ) : (
-                        filteredCourses.map((c) => (
+                        coursePagination.paginatedItems.map((c) => (
                           <Table.Row
                             key={c.id}
                             id={c.id}
@@ -608,16 +665,50 @@ export default function AdminAcademicsPage() {
                               {c.department_name}
                             </Table.Cell>
                             <Table.Cell>{c.credits}</Table.Cell>
+                            <Table.Cell>
+                              <div className="flex w-full items-center justify-start gap-1">
+                                <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex h-8 w-8" onClick={() => openCourseEdit(c)}>
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Edit course</span>
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleCourseDelete(c.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete course</span>
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">More actions</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44">
+                                    <DropdownMenuItem onClick={() => openCourseEdit(c)}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit Course
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleCourseDelete(c.id)} className="text-destructive focus:text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </Table.Cell>
                           </Table.Row>
                         ))
                       )}
                     </Table.Body>
                   </Table>
 
-                  <div className="border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                    {filteredCourses.length} course
-                    {filteredCourses.length !== 1 ? "s" : ""}
-                  </div>
+                  <TablePaginationFooter
+                    count={filteredCourses.length}
+                    itemLabel="course"
+                    currentPage={coursePagination.currentPage}
+                    pageSize={coursePagination.pageSize}
+                    totalPages={coursePagination.totalPages}
+                    onPageChange={coursePagination.setCurrentPage}
+                    onPageSizeChange={coursePagination.setPageSize}
+                  />
                 </TableCard.Root>
               </div>
             </ContextMenuTrigger>
@@ -723,13 +814,18 @@ export default function AdminAcademicsPage() {
                             Enrolled
                           </span>
                         </Table.Head>
+                        <Table.Head>
+                          <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                            Actions
+                          </span>
+                        </Table.Head>
                       </Table.Row>
                     </Table.Header>
                     <Table.Body>
                       {filteredOfferings.length === 0 ? (
                         <Table.Row id="empty-off">
                           <Table.Cell
-                            colSpan={5}
+                            colSpan={6}
                             className="text-center py-8 text-muted-foreground"
                           >
                             <GraduationCap className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -737,7 +833,7 @@ export default function AdminAcademicsPage() {
                           </Table.Cell>
                         </Table.Row>
                       ) : (
-                        filteredOfferings.map((o) => (
+                        offeringPagination.paginatedItems.map((o) => (
                           <Table.Row
                             key={o.id}
                             id={o.id}
@@ -764,16 +860,50 @@ export default function AdminAcademicsPage() {
                                 {o.enrolled_count}/{o.max_students}
                               </div>
                             </Table.Cell>
+                            <Table.Cell>
+                              <div className="flex w-full items-center justify-start gap-1">
+                                <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex h-8 w-8" onClick={() => openOfferingEdit(o)}>
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Edit offering</span>
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleOfferingDelete(o.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete offering</span>
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">More actions</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44">
+                                    <DropdownMenuItem onClick={() => openOfferingEdit(o)}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit Offering
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleOfferingDelete(o.id)} className="text-destructive focus:text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </Table.Cell>
                           </Table.Row>
                         ))
                       )}
                     </Table.Body>
                   </Table>
 
-                  <div className="border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                    {filteredOfferings.length} offering
-                    {filteredOfferings.length !== 1 ? "s" : ""}
-                  </div>
+                  <TablePaginationFooter
+                    count={filteredOfferings.length}
+                    itemLabel="offering"
+                    currentPage={offeringPagination.currentPage}
+                    pageSize={offeringPagination.pageSize}
+                    totalPages={offeringPagination.totalPages}
+                    onPageChange={offeringPagination.setCurrentPage}
+                    onPageSizeChange={offeringPagination.setPageSize}
+                  />
                 </TableCard.Root>
               </div>
             </ContextMenuTrigger>
@@ -806,17 +936,16 @@ export default function AdminAcademicsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Semester Sheet */}
-      <Sheet open={semSheet} onOpenChange={setSemSheet}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{semEditId ? "Edit" : "Create"} Semester</SheetTitle>
-            <SheetDescription>
+      <Dialog open={semSheet} onOpenChange={setSemSheet}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{semEditId ? "Edit" : "Create"} Semester</DialogTitle>
+            <DialogDescription>
               {semEditId
                 ? "Update semester details."
                 : "Add a new academic semester."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSemSubmit} className="space-y-4 p-4">
             <div className="space-y-2">
               <Label>Name</Label>
@@ -868,25 +997,24 @@ export default function AdminAcademicsPage() {
                 />
               </div>
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={semSaving}>
                 {semSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{" "}
                 {semEditId ? "Update" : "Create"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
-      {/* Course Sheet */}
-      <Sheet open={courseSheet} onOpenChange={setCourseSheet}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{courseEditId ? "Edit" : "Create"} Course</SheetTitle>
-            <SheetDescription>
+      <Dialog open={courseSheet} onOpenChange={setCourseSheet}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{courseEditId ? "Edit" : "Create"} Course</DialogTitle>
+            <DialogDescription>
               {courseEditId ? "Update course details." : "Add a new course."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleCourseSubmit} className="space-y-4 p-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -930,31 +1058,30 @@ export default function AdminAcademicsPage() {
                 }
               />
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={courseSaving}>
                 {courseSaving && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}{" "}
                 {courseEditId ? "Update" : "Create"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
-      {/* Offering Sheet */}
-      <Sheet open={offeringSheet} onOpenChange={setOfferingSheet}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>
+      <Dialog open={offeringSheet} onOpenChange={setOfferingSheet}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
               {offeringEditId ? "Edit" : "Create"} Offering
-            </SheetTitle>
-            <SheetDescription>
+            </DialogTitle>
+            <DialogDescription>
               {offeringEditId
                 ? "Update offering details."
                 : "Add a new course offering."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleOfferingSubmit} className="space-y-4 p-4">
             <div className="space-y-2">
               <Label>Course</Label>
@@ -1045,17 +1172,17 @@ export default function AdminAcademicsPage() {
                 />
               </div>
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={offeringSaving}>
                 {offeringSaving && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}{" "}
                 {offeringEditId ? "Update" : "Create"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Upload Dialog */}
       <Dialog

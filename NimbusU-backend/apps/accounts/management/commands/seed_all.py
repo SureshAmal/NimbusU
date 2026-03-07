@@ -17,26 +17,35 @@ from django.utils import timezone
 from apps.academics.models import (
     Course,
     CourseOffering,
+    CoursePrerequisite,
+    DailyQuestion,
+    DailyQuestionAssignment,
+    DailyQuestionResponse,
     Department,
     Enrollment,
+    Grade,
     Program,
     School,
     Semester,
     AcademicEvent,
+    StudentDailyQuestionPerformance,
+    StudentTask,
 )
-from apps.accounts.models import AuditLog, FacultyProfile, StudentProfile
-from apps.assignments.models import Assignment, Submission
+from apps.accounts.models import AuditLog, FacultyProfile, StudentProfile, UserPreferences
+from apps.assignments.models import Assignment, AssignmentGroup, GradingRubric, RubricCriteria, Submission
 from apps.communications.models import (
     Announcement,
     DiscussionForum,
     DiscussionPost,
     Message,
     Notification,
+    NotificationPreference,
     WebhookEndpoint,
     WebhookDelivery,
 )
-from apps.content.models import Bookmark, Content, ContentFolder, ContentTag, ContentComment, ContentVersion
-from apps.timetable.models import AttendanceRecord, Room, TimetableEntry, TimetableSwapRequest, ClassCancellation
+from apps.content.models import Bookmark, Content, ContentFolder, ContentTag, ContentComment, ContentVersion, ContentAccessLog
+from apps.telemetry.models import RequestLog, SiteSettings
+from apps.timetable.models import AttendanceRecord, Room, TimetableEntry, TimetableSwapRequest, ClassCancellation, RoomBooking, SubstituteFaculty
 
 User = get_user_model()
 
@@ -170,6 +179,7 @@ class Command(BaseCommand):
         programs = self._seed_programs(depts)
         semester = self._seed_semesters()
         courses = self._seed_courses(depts)
+        self._seed_prerequisites(courses)
         admin = self._seed_admin(depts)
         faculty_users = self._seed_faculty(depts)
         student_users = self._seed_students(depts, programs)
@@ -177,15 +187,26 @@ class Command(BaseCommand):
         self._seed_enrollments(student_users, offerings)
         rooms = self._seed_rooms()
         self._seed_timetable(offerings, semester)
+        self._seed_room_bookings(rooms, admin, faculty_users, student_users)
         self._seed_swap_requests(offerings, faculty_users)
+        self._seed_substitute_faculty(offerings, faculty_users, admin)
         self._seed_class_cancellations(offerings, student_users)
         self._seed_academic_calendar(semester, admin, depts)
         self._seed_assignments(offerings, faculty_users, student_users)
-        self._seed_announcements(admin, faculty_users)
+        self._seed_assignment_metadata(offerings, student_users)
+        self._seed_grades(student_users, offerings)
+        self._seed_student_tasks(student_users, offerings)
+        self._seed_daily_questions(offerings, faculty_users, student_users)
+        self._seed_announcements(admin, faculty_users, offerings)
+        self._seed_forums(offerings, faculty_users, student_users)
         self._seed_content(offerings, faculty_users, student_users)
+        self._seed_content_engagement(student_users)
         self._seed_messages(faculty_users, student_users)
         self._seed_notifications(student_users)
+        self._seed_notification_preferences(admin, faculty_users, student_users)
+        self._seed_user_preferences(admin, faculty_users, student_users)
         self._seed_webhooks(admin)
+        self._seed_telemetry(admin, faculty_users, student_users)
         self._seed_audit_logs(admin, faculty_users)
 
         self.stdout.write(self.style.SUCCESS("\n" + "=" * 55))
@@ -202,13 +223,15 @@ class Command(BaseCommand):
     def _flush(self):
         """Remove all seeded data in reverse-dependency order."""
         models = [
+            RequestLog, SiteSettings,
             WebhookDelivery, WebhookEndpoint,
-            ClassCancellation, TimetableSwapRequest, AttendanceRecord, TimetableEntry, Room,
-            Bookmark, ContentComment, ContentVersion, Content, ContentTag, ContentFolder,
-            Notification, DiscussionPost, DiscussionForum, Message, Announcement,
-            Submission, Assignment,
-            Enrollment, CourseOffering, Course, AcademicEvent, Semester, Program,
-            AuditLog, StudentProfile, FacultyProfile,
+            NotificationPreference, Notification, DiscussionPost, DiscussionForum, Message, Announcement,
+            ClassCancellation, TimetableSwapRequest, SubstituteFaculty, RoomBooking, AttendanceRecord, TimetableEntry, Room,
+            Bookmark, ContentAccessLog, ContentComment, ContentVersion, Content, ContentTag, ContentFolder,
+            DailyQuestionResponse, DailyQuestionAssignment, StudentDailyQuestionPerformance, DailyQuestion,
+            AssignmentGroup, RubricCriteria, GradingRubric, Submission, Assignment,
+            Grade, StudentTask, Enrollment, CourseOffering, CoursePrerequisite, Course, AcademicEvent, Semester, Program,
+            UserPreferences, AuditLog, StudentProfile, FacultyProfile,
         ]
         for m in models:
             count = m.objects.all().delete()[0]
@@ -293,6 +316,31 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(self.style.SUCCESS(f"  ✅ Course: {code} — {name}"))
         return courses
+
+    # ── Course Prerequisites ───────────────────────────────────────
+    def _seed_prerequisites(self, courses):
+        relationships = [
+            ("CS201", "CS101", CoursePrerequisite.Type.PREREQUISITE, "C"),
+            ("CS301", "CS201", CoursePrerequisite.Type.PREREQUISITE, "C"),
+            ("CS302", "CS201", CoursePrerequisite.Type.PREREQUISITE, "C"),
+            ("CS401", "CS301", CoursePrerequisite.Type.PREREQUISITE, "B"),
+            ("CS402", "CS302", CoursePrerequisite.Type.COREQUISITE, ""),
+            ("EC301", "EC201", CoursePrerequisite.Type.PREREQUISITE, "C"),
+        ]
+        count = 0
+        for course_code, required_code, rel_type, min_grade in relationships:
+            course = courses.get(course_code)
+            required = courses.get(required_code)
+            if not course or not required:
+                continue
+            _, created = CoursePrerequisite.objects.get_or_create(
+                course=course,
+                required_course=required,
+                defaults={"type": rel_type, "min_grade": min_grade},
+            )
+            if created:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Course prerequisites: {count}"))
 
     # ── Admin ───────────────────────────────────────────────────────
     def _seed_admin(self, depts):
@@ -697,6 +745,59 @@ class Command(BaseCommand):
                 count += 1
         self.stdout.write(self.style.SUCCESS(f"  ✅ Class Cancellations: {count}"))
 
+    # ── Room Bookings ──────────────────────────────────────────────
+    def _seed_room_bookings(self, rooms, admin, faculty_users, student_users):
+        booking_data = [
+            ("Seminar Hall", faculty_users[0], date(2026, 3, 18), time(14, 0), time(16, 0), "AI in Healthcare guest lecture", "approved", admin),
+            ("Conference Room A", faculty_users[1], date(2026, 3, 11), time(11, 0), time(12, 0), "Database curriculum review meeting", "approved", admin),
+            ("CS Lab 1", student_users[0], date(2026, 3, 20), time(16, 0), time(18, 0), "Hackathon practice session", "pending", None),
+        ]
+        count = 0
+        for room_name, booked_by, day, start_t, end_t, purpose, status, approved_by in booking_data:
+            room = rooms.get(room_name)
+            if not room:
+                continue
+            _, created = RoomBooking.objects.get_or_create(
+                room=room,
+                date=day,
+                start_time=start_t,
+                defaults={
+                    "end_time": end_t,
+                    "booked_by": booked_by,
+                    "purpose": purpose,
+                    "status": status,
+                    "approved_by": approved_by,
+                },
+            )
+            if created:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Room bookings: {count}"))
+
+    # ── Substitute Faculty ─────────────────────────────────────────
+    def _seed_substitute_faculty(self, offerings, faculty_users, admin):
+        count = 0
+        replacements = [
+            ("CS401", date(2026, 3, 13), faculty_users[1], "Covering due to external workshop"),
+            ("EC201", date(2026, 3, 14), faculty_users[2], "Faculty medical leave"),
+        ]
+        for course_code, target_date, substitute, reason in replacements:
+            offering = offerings.get(course_code)
+            entry = TimetableEntry.objects.filter(course_offering=offering).first() if offering else None
+            if not entry:
+                continue
+            _, created = SubstituteFaculty.objects.get_or_create(
+                timetable_entry=entry,
+                date=target_date,
+                defaults={
+                    "substitute": substitute,
+                    "reason": reason,
+                    "assigned_by": admin,
+                },
+            )
+            if created:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Substitute faculty assignments: {count}"))
+
     # ── Academic Calendar ───────────────────────────────────────────
     def _seed_academic_calendar(self, semester, admin, depts):
         events = [
@@ -775,8 +876,460 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"  ✅ Assignments: {a_count}, Submissions: {s_count}"))
 
+    # ── Assignment Metadata ────────────────────────────────────────
+    def _seed_assignment_metadata(self, offerings, student_users):
+        rubric_count = 0
+        criteria_count = 0
+        group_count = 0
+
+        rubric_templates = {
+            "Linear Regression Project": [
+                ("Problem Understanding", "Clear formulation of the ML problem.", Decimal("40.00")),
+                ("Model Implementation", "Correct implementation and experimentation.", Decimal("100.00")),
+                ("Evaluation & Insights", "Analysis of results and improvements.", Decimal("60.00")),
+            ],
+            "Network Packet Analysis": [
+                ("Capture Quality", "Representative packet captures collected.", Decimal("40.00")),
+                ("Protocol Analysis", "Correct interpretation of network traffic.", Decimal("70.00")),
+                ("Reporting", "Concise findings with screenshots.", Decimal("40.00")),
+            ],
+        }
+
+        for title, criteria in rubric_templates.items():
+            assignment = Assignment.objects.filter(title=title).select_related("created_by").first()
+            if not assignment:
+                continue
+            rubric, created = GradingRubric.objects.get_or_create(
+                assignment=assignment,
+                defaults={"created_by": assignment.created_by},
+            )
+            if created:
+                rubric_count += 1
+            for order, (name, description, marks) in enumerate(criteria, start=1):
+                _, criterion_created = RubricCriteria.objects.get_or_create(
+                    rubric=rubric,
+                    name=name,
+                    defaults={
+                        "description": description,
+                        "max_marks": marks,
+                        "order": order,
+                    },
+                )
+                if criterion_created:
+                    criteria_count += 1
+
+        group_assignments = Assignment.objects.filter(assignment_type="project").select_related("course_offering")
+        for assignment in group_assignments:
+            enrollments = list(
+                Enrollment.objects.filter(course_offering=assignment.course_offering).select_related("student")[:6]
+            )
+            if len(enrollments) < 3:
+                continue
+            for idx, members in enumerate((enrollments[:3], enrollments[3:6]), start=1):
+                if not members:
+                    continue
+                group, created = AssignmentGroup.objects.get_or_create(
+                    assignment=assignment,
+                    name=f"Team {idx}",
+                )
+                group.members.set([member.student for member in members])
+                if created:
+                    group_count += 1
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"  ✅ Assignment metadata: {rubric_count} rubrics, {criteria_count} criteria, {group_count} groups"
+            )
+        )
+
+    # ── Grades ─────────────────────────────────────────────────────
+    def _seed_grades(self, student_users, offerings):
+        grade_scale = ["O", "A+", "A", "B+", "B", "C"]
+        target_courses = ["CS101", "CS201", "EC201", "MA101"]
+        count = 0
+        for course_code in target_courses:
+            offering = offerings.get(course_code)
+            if not offering:
+                continue
+            enrollments = Enrollment.objects.filter(course_offering=offering).select_related("student")[:5]
+            for idx, enrollment in enumerate(enrollments):
+                letter = grade_scale[(idx + len(course_code)) % len(grade_scale)]
+                _, created = Grade.objects.get_or_create(
+                    student=enrollment.student,
+                    course_offering=offering,
+                    defaults={
+                        "grade_letter": letter,
+                        "credits_earned": offering.course.credits if letter not in {"F", "W", "I"} else 0,
+                        "remarks": "Published from seed data",
+                        "published_at": timezone.now() - timedelta(days=7),
+                    },
+                )
+                if created:
+                    count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Grades: {count}"))
+
+    # ── Student Tasks ──────────────────────────────────────────────
+    def _seed_student_tasks(self, student_users, offerings):
+        task_templates = [
+            ("Revise DSA recursion patterns", "Practice at least 10 recursion problems before the quiz.", "CS201", 2, False),
+            ("Prepare DBMS normalization notes", "Summarize 1NF to BCNF with examples.", "CS301", 4, False),
+            ("Complete ML dataset cleanup", "Finalize data preprocessing notebook for mini-project.", "CS401", 1, True),
+            ("Review attendance shortage", "Meet mentor if attendance drops below threshold.", None, 5, False),
+        ]
+        count = 0
+        for idx, student in enumerate(student_users[:8]):
+            for title, description, course_code, days_ahead, completed in task_templates[:2 + (idx % 2)]:
+                course_offering = offerings.get(course_code) if course_code else None
+                _, created = StudentTask.objects.get_or_create(
+                    student=student,
+                    title=title,
+                    defaults={
+                        "description": description,
+                        "course_offering": course_offering,
+                        "due_date": timezone.now() + timedelta(days=days_ahead + idx % 3),
+                        "is_completed": completed and idx % 3 == 0,
+                    },
+                )
+                if created:
+                    count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Student tasks: {count}"))
+
+    # ── Daily Questions ────────────────────────────────────────────
+    def _seed_daily_questions(self, offerings, faculty_users, student_users):
+        today = timezone.localdate()
+        question_templates = [
+            {
+                "title": "Python List Comprehension Warm-up",
+                "course": "CS101",
+                "question_type": DailyQuestion.QuestionType.SINGLE,
+                "difficulty": DailyQuestion.DifficultyLevel.EASY,
+                "points": 5,
+                "time_limit": 10,
+                "offset": 0,
+                "start": time(9, 0),
+                "end": time(18, 0),
+                "question_text": "Which expression creates a list of squares from 1 to 5 in Python?",
+                "options": [
+                    {"id": 1, "text": "[x*x for x in range(1, 6)]"},
+                    {"id": 2, "text": "list(x^2 for x in 1..5)"},
+                    {"id": 3, "text": "square(range(1, 6))"},
+                ],
+                "correct_answer": 1,
+            },
+            {
+                "title": "Complexity of Binary Search",
+                "course": "CS201",
+                "question_type": DailyQuestion.QuestionType.SINGLE,
+                "difficulty": DailyQuestion.DifficultyLevel.EASY,
+                "points": 5,
+                "time_limit": 8,
+                "offset": -1,
+                "start": time(10, 0),
+                "end": time(17, 0),
+                "question_text": "What is the time complexity of binary search on a sorted array?",
+                "options": [
+                    {"id": 1, "text": "O(log n)"},
+                    {"id": 2, "text": "O(n)"},
+                    {"id": 3, "text": "O(n log n)"},
+                    {"id": 4, "text": "O(1)"},
+                ],
+                "correct_answer": 1,
+            },
+            {
+                "title": "Normalization Check",
+                "course": "CS301",
+                "question_type": DailyQuestion.QuestionType.MCQ,
+                "difficulty": DailyQuestion.DifficultyLevel.MEDIUM,
+                "points": 8,
+                "time_limit": 12,
+                "offset": -2,
+                "start": time(9, 30),
+                "end": time(17, 30),
+                "question_text": "Which of the following statements about 3NF are correct?",
+                "options": [
+                    {"id": 1, "text": "Every non-key attribute depends only on the key."},
+                    {"id": 2, "text": "Transitive dependencies are eliminated."},
+                    {"id": 3, "text": "It always removes all anomalies without any tradeoff."},
+                    {"id": 4, "text": "A table in BCNF is always in 3NF."},
+                ],
+                "correct_answer": [1, 2, 4],
+            },
+            {
+                "title": "Linear Regression Gradient Step",
+                "course": "CS401",
+                "question_type": DailyQuestion.QuestionType.PROGRAMMING,
+                "difficulty": DailyQuestion.DifficultyLevel.MEDIUM,
+                "points": 15,
+                "time_limit": 20,
+                "offset": 1,
+                "start": time(8, 0),
+                "end": time(20, 0),
+                "question_text": "Write a function `gradient_step(w, grad, lr)` that returns the updated parameter after one gradient descent step.",
+                "correct_answer": "return w - lr * grad",
+                "test_cases": [
+                    {"input": "w=10, grad=2, lr=0.1", "expected_output": "9.8"},
+                    {"input": "w=-1, grad=-4, lr=0.5", "expected_output": "1.0"},
+                ],
+                "starter_code": "def gradient_step(w, grad, lr):\n    # TODO: implement\n    pass\n",
+                "language": "python",
+            },
+            {
+                "title": "Deadlock Conditions",
+                "course": "CS302",
+                "question_type": DailyQuestion.QuestionType.MCQ,
+                "difficulty": DailyQuestion.DifficultyLevel.MEDIUM,
+                "points": 10,
+                "time_limit": 15,
+                "offset": 0,
+                "start": time(13, 0),
+                "end": time(22, 0),
+                "question_text": "Select the Coffman conditions required for deadlock.",
+                "options": [
+                    {"id": 1, "text": "Mutual exclusion"},
+                    {"id": 2, "text": "Preemption"},
+                    {"id": 3, "text": "Hold and wait"},
+                    {"id": 4, "text": "Circular wait"},
+                ],
+                "correct_answer": [1, 3, 4],
+            },
+            {
+                "title": "HTTP vs TCP",
+                "course": "CS402",
+                "question_type": DailyQuestion.QuestionType.SINGLE,
+                "difficulty": DailyQuestion.DifficultyLevel.EASY,
+                "points": 5,
+                "time_limit": 8,
+                "offset": -3,
+                "start": time(9, 0),
+                "end": time(16, 0),
+                "question_text": "HTTP is primarily an application layer protocol built on top of which transport protocol?",
+                "options": [
+                    {"id": 1, "text": "UDP"},
+                    {"id": 2, "text": "TCP"},
+                    {"id": 3, "text": "IP"},
+                ],
+                "correct_answer": 2,
+            },
+            {
+                "title": "K-map Reduction",
+                "course": "EC201",
+                "question_type": DailyQuestion.QuestionType.SINGLE,
+                "difficulty": DailyQuestion.DifficultyLevel.MEDIUM,
+                "points": 6,
+                "time_limit": 10,
+                "offset": 2,
+                "start": time(9, 0),
+                "end": time(17, 0),
+                "question_text": "What is the primary purpose of a Karnaugh map?",
+                "options": [
+                    {"id": 1, "text": "To simplify boolean expressions"},
+                    {"id": 2, "text": "To design flip-flops"},
+                    {"id": 3, "text": "To count clock cycles"},
+                ],
+                "correct_answer": 1,
+            },
+            {
+                "title": "Fourier Transform Concept",
+                "course": "EC301",
+                "question_type": DailyQuestion.QuestionType.SINGLE,
+                "difficulty": DailyQuestion.DifficultyLevel.MEDIUM,
+                "points": 7,
+                "time_limit": 9,
+                "offset": -1,
+                "start": time(11, 0),
+                "end": time(18, 0),
+                "question_text": "The Fourier transform converts a signal from which domain to which domain?",
+                "options": [
+                    {"id": 1, "text": "Frequency to time"},
+                    {"id": 2, "text": "Time to frequency"},
+                    {"id": 3, "text": "Analog to digital"},
+                ],
+                "correct_answer": 2,
+            },
+        ]
+
+        q_count = 0
+        assignment_count = 0
+        response_count = 0
+
+        for template in question_templates:
+            offering = offerings.get(template["course"])
+            if not offering:
+                continue
+            question, created = DailyQuestion.objects.get_or_create(
+                title=template["title"],
+                course_offering=offering,
+                defaults={
+                    "description": f"Daily practice question for {offering.course.name}",
+                    "question_type": template["question_type"],
+                    "difficulty": template["difficulty"],
+                    "question_text": template["question_text"],
+                    "options": template.get("options"),
+                    "correct_answer": template["correct_answer"],
+                    "test_cases": template.get("test_cases"),
+                    "starter_code": template.get("starter_code"),
+                    "language": template.get("language"),
+                    "points": template["points"],
+                    "time_limit_minutes": template["time_limit"],
+                    "scheduled_date": today + timedelta(days=template["offset"]),
+                    "start_time": template["start"],
+                    "end_time": template["end"],
+                    "is_active": True,
+                    "created_by": offering.faculty,
+                },
+            )
+            if created:
+                q_count += 1
+
+            enrollments = list(
+                Enrollment.objects.filter(course_offering=offering).select_related("student")[:6]
+            )
+            for index, enrollment in enumerate(enrollments):
+                batch = getattr(enrollment.student.student_profile, "batch", None)
+                status = DailyQuestionAssignment.Status.ASSIGNED
+                started_at = None
+                submitted_at = None
+                time_taken_seconds = None
+                is_correct = False
+                points_earned = 0
+
+                if template["offset"] > 0:
+                    status = DailyQuestionAssignment.Status.PENDING
+                elif template["offset"] == 0:
+                    status = [
+                        DailyQuestionAssignment.Status.ASSIGNED,
+                        DailyQuestionAssignment.Status.STARTED,
+                        DailyQuestionAssignment.Status.SUBMITTED,
+                    ][index % 3]
+                else:
+                    status = [
+                        DailyQuestionAssignment.Status.GRADED,
+                        DailyQuestionAssignment.Status.SUBMITTED,
+                        DailyQuestionAssignment.Status.EXPIRED,
+                    ][index % 3]
+
+                if status in {
+                    DailyQuestionAssignment.Status.STARTED,
+                    DailyQuestionAssignment.Status.SUBMITTED,
+                    DailyQuestionAssignment.Status.GRADED,
+                }:
+                    started_at = timezone.now() - timedelta(days=max(abs(template["offset"]), 0), minutes=question.time_limit_minutes + 5)
+                    time_taken_seconds = random.randint(90, question.time_limit_minutes * 60)
+
+                if status in {
+                    DailyQuestionAssignment.Status.SUBMITTED,
+                    DailyQuestionAssignment.Status.GRADED,
+                }:
+                    submitted_at = (started_at or timezone.now()) + timedelta(seconds=time_taken_seconds or 180)
+                    is_correct = index % 2 == 0
+                    points_earned = question.points if is_correct else max(0, question.points // 2)
+
+                assignment, assignment_created = DailyQuestionAssignment.objects.get_or_create(
+                    question=question,
+                    student=enrollment.student,
+                    defaults={
+                        "batch": batch,
+                        "status": status,
+                        "started_at": started_at,
+                        "submitted_at": submitted_at,
+                        "time_taken_seconds": time_taken_seconds,
+                        "points_earned": points_earned,
+                        "is_correct": is_correct,
+                    },
+                )
+                if assignment_created:
+                    assignment_count += 1
+
+                if status in {
+                    DailyQuestionAssignment.Status.SUBMITTED,
+                    DailyQuestionAssignment.Status.GRADED,
+                }:
+                    response_defaults = {
+                        "is_correct": is_correct,
+                        "marks_obtained": Decimal(str(points_earned)),
+                        "ip_address": f"192.168.10.{10 + index}",
+                        "user_agent": "NimbusU Seed Browser",
+                        "submitted_at": submitted_at or timezone.now(),
+                    }
+                    if question.question_type == DailyQuestion.QuestionType.PROGRAMMING:
+                        response_defaults["code_answer"] = "def gradient_step(w, grad, lr):\n    return w - lr * grad\n"
+                        response_defaults["output_result"] = "All test cases passed" if is_correct else "1 test case failed"
+                    else:
+                        selected = question.correct_answer if is_correct else ([question.options[0]["id"]] if question.question_type == DailyQuestion.QuestionType.MCQ else [question.options[-1]["id"]])
+                        if question.question_type == DailyQuestion.QuestionType.SINGLE:
+                            selected = [question.correct_answer if is_correct else question.options[-1]["id"]]
+                        response_defaults["selected_options"] = selected
+
+                    _, response_created = DailyQuestionResponse.objects.get_or_create(
+                        assignment=assignment,
+                        defaults=response_defaults,
+                    )
+                    if response_created:
+                        response_count += 1
+
+        self._seed_daily_question_performance(student_users)
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"  ✅ Daily questions: {q_count}, assignments: {assignment_count}, responses: {response_count}"
+            )
+        )
+
+    def _seed_daily_question_performance(self, student_users):
+        perf_count = 0
+        for student in student_users:
+            assignments = list(
+                DailyQuestionAssignment.objects.filter(student=student)
+                .select_related("question")
+                .order_by("question__scheduled_date")
+            )
+            if not assignments:
+                continue
+
+            by_date = {}
+            for assignment in assignments:
+                day = assignment.question.scheduled_date
+                bucket = by_date.setdefault(
+                    day,
+                    {
+                        "total_assigned": 0,
+                        "total_submitted": 0,
+                        "total_correct": 0,
+                        "total_points_earned": 0,
+                        "total_time_seconds": 0,
+                    },
+                )
+                bucket["total_assigned"] += 1
+                if assignment.status in {
+                    DailyQuestionAssignment.Status.SUBMITTED,
+                    DailyQuestionAssignment.Status.GRADED,
+                }:
+                    bucket["total_submitted"] += 1
+                if assignment.is_correct:
+                    bucket["total_correct"] += 1
+                bucket["total_points_earned"] += assignment.points_earned
+                bucket["total_time_seconds"] += assignment.time_taken_seconds or 0
+
+            current_streak = 0
+            longest_streak = 0
+            for day in sorted(by_date.keys()):
+                metrics = by_date[day]
+                current_streak = current_streak + 1 if metrics["total_correct"] > 0 else 0
+                longest_streak = max(longest_streak, current_streak)
+                _, created = StudentDailyQuestionPerformance.objects.update_or_create(
+                    student=student,
+                    date=day,
+                    defaults={
+                        **metrics,
+                        "current_streak": current_streak,
+                        "longest_streak": longest_streak,
+                    },
+                )
+                if created:
+                    perf_count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Daily question performance rows: {perf_count}"))
+
     # ── Announcements ───────────────────────────────────────────────
-    def _seed_announcements(self, admin, faculty_users):
+    def _seed_announcements(self, admin, faculty_users, offerings):
         count = 0
         for i, (title, body, urgent, target) in enumerate(ANNOUNCEMENTS):
             author = admin if i < 5 else random.choice(faculty_users)
@@ -789,7 +1342,74 @@ class Command(BaseCommand):
             )
             if created:
                 count += 1
+
+        course_targets = [
+            ("CS201", "DSA Lab This Week", "Please complete the graph traversal worksheet before Saturday lab.", False),
+            ("CS301", "DBMS Project Milestone", "ER diagram review will happen in next class. Upload draft before Monday.", True),
+            ("EC201", "Logic Design Quiz Reminder", "Quiz on Karnaugh maps will be conducted during Thursday session.", False),
+        ]
+        for course_code, title, body, urgent in course_targets:
+            offering = offerings.get(course_code)
+            if not offering:
+                continue
+            _, created = Announcement.objects.get_or_create(
+                title=title,
+                target_id=offering.id,
+                defaults={
+                    "body": body,
+                    "created_by": offering.faculty,
+                    "target_type": Announcement.TargetType.COURSE,
+                    "is_urgent": urgent,
+                    "is_published": True,
+                },
+            )
+            if created:
+                count += 1
         self.stdout.write(self.style.SUCCESS(f"  ✅ Announcements: {count}"))
+
+    # ── Forums ─────────────────────────────────────────────────────
+    def _seed_forums(self, offerings, faculty_users, student_users):
+        forum_specs = [
+            ("CS201", "Week 5 Doubt Clearing Forum"),
+            ("CS301", "Mini Project Discussion"),
+            ("CS401", "Model Evaluation Q&A"),
+        ]
+        forum_count = 0
+        post_count = 0
+        for course_code, title in forum_specs:
+            offering = offerings.get(course_code)
+            if not offering:
+                continue
+            forum, created = DiscussionForum.objects.get_or_create(
+                title=title,
+                course_offering=offering,
+                defaults={"created_by": offering.faculty, "is_active": True},
+            )
+            if created:
+                forum_count += 1
+
+            sample_students = list(
+                Enrollment.objects.filter(course_offering=offering).select_related("student")[:3]
+            )
+            if not sample_students:
+                continue
+            starter, starter_created = DiscussionPost.objects.get_or_create(
+                forum=forum,
+                author=sample_students[0].student,
+                body="Can someone share a good approach to prepare for this week's topic?",
+                parent=None,
+            )
+            if starter_created:
+                post_count += 1
+            _, reply_created = DiscussionPost.objects.get_or_create(
+                forum=forum,
+                author=offering.faculty,
+                parent=starter,
+                body="Start with the lecture slides, then solve the practice sheet uploaded in course content.",
+            )
+            if reply_created:
+                post_count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Forums: {forum_count}, Posts: {post_count}"))
 
     # ── Content ─────────────────────────────────────────────────────
     def _seed_content(self, offerings, faculty_users, student_users):
@@ -849,6 +1469,26 @@ class Command(BaseCommand):
                 count += 1
         self.stdout.write(self.style.SUCCESS(f"  ✅ Content items: {count}, Tags: {len(tag_objs)}"))
 
+    # ── Content Engagement ─────────────────────────────────────────
+    def _seed_content_engagement(self, student_users):
+        contents = list(Content.objects.all()[:8])
+        bookmark_count = 0
+        log_count = 0
+        for idx, student in enumerate(student_users[:6]):
+            for content in contents[idx % 3: idx % 3 + 2]:
+                _, bookmark_created = Bookmark.objects.get_or_create(user=student, content=content)
+                if bookmark_created:
+                    bookmark_count += 1
+                _, log_created = ContentAccessLog.objects.get_or_create(
+                    content=content,
+                    user=student,
+                    action=ContentAccessLog.Action.VIEWED,
+                    defaults={"duration_seconds": random.randint(45, 420)},
+                )
+                if log_created:
+                    log_count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Content engagement: {bookmark_count} bookmarks, {log_count} access logs"))
+
     # ── Messages ────────────────────────────────────────────────────
     def _seed_messages(self, faculty_users, student_users):
         messages_data = [
@@ -898,6 +1538,50 @@ class Command(BaseCommand):
                     count += 1
         self.stdout.write(self.style.SUCCESS(f"  ✅ Notifications: {count}"))
 
+    # ── Notification Preferences ───────────────────────────────────
+    def _seed_notification_preferences(self, admin, faculty_users, student_users):
+        count = 0
+        users = [admin] + faculty_users[:3] + student_users[:6]
+        for user in users:
+            for notification_type in [
+                Notification.NotificationType.ANNOUNCEMENT,
+                Notification.NotificationType.ASSIGNMENT,
+                Notification.NotificationType.GRADE,
+                Notification.NotificationType.MESSAGE,
+            ]:
+                _, created = NotificationPreference.objects.get_or_create(
+                    user=user,
+                    notification_type=notification_type,
+                    defaults={
+                        "email_enabled": notification_type != Notification.NotificationType.MESSAGE,
+                        "push_enabled": True,
+                        "in_app_enabled": True,
+                    },
+                )
+                if created:
+                    count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Notification preferences: {count}"))
+
+    # ── User Preferences ───────────────────────────────────────────
+    def _seed_user_preferences(self, admin, faculty_users, student_users):
+        count = 0
+        users = [admin] + faculty_users + student_users
+        for idx, user in enumerate(users):
+            _, created = UserPreferences.objects.get_or_create(
+                user=user,
+                defaults={
+                    "theme": ["system", "light", "dark"][idx % 3],
+                    "calendar_view": ["week", "month", "day"][idx % 3],
+                    "compact_sidebar": idx % 2 == 0,
+                    "language": "en",
+                    "timezone": "asia_kolkata",
+                    "date_format": "dd_mm_yyyy",
+                },
+            )
+            if created:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ User preferences: {count}"))
+
     # ── Webhooks ────────────────────────────────────────────────────
     def _seed_webhooks(self, admin):
         endpoint, created = WebhookEndpoint.objects.get_or_create(
@@ -922,6 +1606,43 @@ class Command(BaseCommand):
                 delivered_at=timezone.now(),
             )
             self.stdout.write(self.style.SUCCESS("  ✅ Webhooks: 1 endpoint, 1 delivery log"))
+
+    # ── Telemetry ──────────────────────────────────────────────────
+    def _seed_telemetry(self, admin, faculty_users, student_users):
+        settings_obj = SiteSettings.load()
+        settings_obj.institution_name = "NimbusU University"
+        settings_obj.support_email = "support@nimbusu.edu"
+        settings_obj.academic_year = "2025-2026"
+        settings_obj.enable_student_registration = True
+        settings_obj.enable_file_uploads = True
+        settings_obj.enable_forum_discussions = True
+        settings_obj.save()
+
+        request_specs = [
+            ("GET", "/api/v1/academics/offerings/", 200),
+            ("GET", "/api/v1/academics/daily-questions/my-assignments/", 200),
+            ("POST", "/api/v1/academics/daily-questions/", 201),
+            ("GET", "/api/v1/communications/forums/", 200),
+            ("GET", "/api/v1/attendance/summary/", 200),
+            ("POST", "/api/v1/auth/token/", 200),
+        ]
+        users = [admin] + faculty_users[:3] + student_users[:6]
+        count = 0
+        for idx, (method, path, status_code) in enumerate(request_specs * 3):
+            _, created = RequestLog.objects.get_or_create(
+                method=method,
+                path=path,
+                user=users[idx % len(users)],
+                status_code=status_code,
+                defaults={
+                    "response_time_ms": random.uniform(45, 380),
+                    "ip_address": f"10.10.0.{idx + 10}",
+                    "user_agent": "NimbusU Seed Agent/1.0",
+                },
+            )
+            if created:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f"  ✅ Telemetry: site settings + {count} request logs"))
 
     # ── Audit Logs ──────────────────────────────────────────────────
     def _seed_audit_logs(self, admin, faculty_users):

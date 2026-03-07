@@ -14,15 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableCard } from "@/components/application/table/table";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -32,9 +25,20 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
@@ -67,10 +71,13 @@ import {
   ChevronDown,
   X,
   Pencil,
+  Trash2,
+  MoreHorizontal,
   Filter,
   Eye,
   EyeOff,
   Upload,
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -92,6 +99,190 @@ const ROLE_COLORS: Record<string, string> = {
 
 const DEBOUNCE_MS = 400;
 
+type BulkUploadUser = {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  department?: string;
+  phone?: string;
+  student_profile?: Record<string, unknown>;
+  faculty_profile?: Record<string, unknown>;
+};
+
+const BULK_IMPORT_TEMPLATE = [
+  {
+    email: "student1@example.com",
+    password: "Password123",
+    first_name: "Asha",
+    last_name: "Patel",
+    role: "student",
+    department: "department-id-or-name",
+    phone: "9876543210",
+    student_id_number: "ENR-2026-001",
+    register_no: "REG-2026-001",
+    program: "program-id-or-name",
+    current_semester: "1",
+    admission_date: "2026-06-01",
+    batch_year: "2026",
+    batch: "A",
+    division: "1",
+  },
+  {
+    email: "faculty1@example.com",
+    password: "Password123",
+    first_name: "Ravi",
+    last_name: "Sharma",
+    role: "faculty",
+    department: "department-id-or-name",
+    phone: "9988776655",
+    employee_id: "EMP-102",
+    designation: "Assistant Professor",
+    specialization: "Data Science",
+    joining_date: "2024-07-01",
+  },
+];
+
+function normalizeCsvHeader(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function parseCsvRow(line: string) {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function parseCsvRecords(text: string) {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) return [] as Record<string, string>[];
+
+  const headers = parseCsvRow(lines[0]).map(normalizeCsvHeader);
+  return lines.slice(1).map((line) => {
+    const values = parseCsvRow(line);
+    return headers.reduce<Record<string, string>>((record, header, index) => {
+      record[header] = values[index] ?? "";
+      return record;
+    }, {});
+  });
+}
+
+function escapeCsvValue(value: unknown) {
+  const normalized = value == null ? "" : String(value);
+  if (/[",\n]/.test(normalized)) {
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+  return normalized;
+}
+
+function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
+  if (rows.length === 0) return;
+
+  const headers = Object.keys(rows[0]);
+  const content = [
+    headers.join(","),
+    ...rows.map((row) => headers.map((header) => escapeCsvValue(row[header])).join(",")),
+  ].join("\n");
+
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function resolveEntityId<T extends { id: string }>(
+  rawValue: string | undefined,
+  items: T[],
+  extractors: Array<(item: T) => string | undefined>,
+) {
+  if (!rawValue) return undefined;
+  const normalized = rawValue.trim().toLowerCase();
+  if (!normalized) return undefined;
+
+  const exact = items.find((item) => item.id === rawValue.trim());
+  if (exact) return exact.id;
+
+  const match = items.find((item) =>
+    extractors.some((extractor) => extractor(item)?.trim().toLowerCase() === normalized),
+  );
+  return match?.id;
+}
+
+function exportableUsers(users: User[]) {
+  return users.map((user) => ({
+    first_name: user.first_name,
+    last_name: user.last_name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone ?? "",
+    school: user.school_name ?? "",
+    department: user.department_name ?? "",
+    status: user.is_active ? "active" : "inactive",
+    student_id_number: user.student_profile?.student_id_number ?? "",
+    roll_no: user.student_profile?.roll_no ?? "",
+    register_no: user.student_profile?.register_no ?? "",
+    program: user.program_name ?? "",
+    current_semester: user.student_profile?.current_semester ?? "",
+    admission_date: user.student_profile?.admission_date ?? "",
+    batch_year: user.student_profile?.batch_year ?? "",
+    batch: user.student_profile?.batch ?? "",
+    division: user.student_profile?.division ?? "",
+    employee_id: user.faculty_profile?.employee_id ?? "",
+    designation: user.faculty_profile?.designation ?? "",
+    specialization: user.faculty_profile?.specialization ?? "",
+    joining_date: user.faculty_profile?.joining_date ?? "",
+  }));
+}
+
+function resolveProfileImageUrl(profilePicture: string | null) {
+  if (!profilePicture) return undefined;
+  if (profilePicture.startsWith("http")) return profilePicture;
+  return `${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace("/api/v1", "")}${profilePicture}`;
+}
+
+function formatDisplayDate(value: string | null | undefined) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return format(parsed, "PPP");
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -107,9 +298,14 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [contextMenuUser, setContextMenuUser] = useState<User | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
 
   // Reset password dialog
   const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [resetPwUserId, setResetPwUserId] = useState<string | null>(null);
   const [resetPwUserName, setResetPwUserName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -121,6 +317,8 @@ export default function AdminUsersPage() {
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [bulkUploadFile, setBulkUploadFile] = useState<File | null>(null);
   const [bulkUploading, setBulkUploading] = useState(false);
+  const [exportingUsers, setExportingUsers] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
   // Lookup data for filters and form dropdowns
   const [schools, setSchools] = useState<School[]>([]);
@@ -156,6 +354,7 @@ export default function AdminUsersPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const profileCacheRef = useRef<Map<string, User>>(new Map());
 
   // Load lookup data on mount
   useEffect(() => {
@@ -219,6 +418,7 @@ export default function AdminUsersPage() {
 
       try {
         const params: Record<string, string> = {};
+        params.page_size = "1000";
         const q = opts?.searchOverride ?? search;
         if (q) params.search = q;
         if (roleFilter !== "all") params.role = roleFilter;
@@ -291,10 +491,27 @@ export default function AdminUsersPage() {
     return result;
   }, [users, statusFilter]);
 
+  useEffect(() => {
+    setSelectedUserIds((prev) => {
+      const validIds = new Set(filteredUsers.map((user) => user.id));
+      return new Set([...prev].filter((id) => validIds.has(id)));
+    });
+  }, [filteredUsers]);
+
   const paginatedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     return filteredUsers.slice(startIndex, startIndex + pageSize);
   }, [filteredUsers, currentPage, pageSize]);
+
+  const selectedUsers = useMemo(
+    () => filteredUsers.filter((user) => selectedUserIds.has(user.id)),
+    [filteredUsers, selectedUserIds],
+  );
+
+  const allVisibleSelected =
+    paginatedUsers.length > 0 && paginatedUsers.every((user) => selectedUserIds.has(user.id));
+  const someVisibleSelected =
+    paginatedUsers.some((user) => selectedUserIds.has(user.id)) && !allVisibleSelected;
 
   const totalPages = Math.ceil(filteredUsers.length / pageSize);
 
@@ -326,12 +543,14 @@ export default function AdminUsersPage() {
   });
 
   function openCreate() {
+    setContextMenuUser(null);
     setEditId(null);
     setForm(emptyForm());
     setSheetOpen(true);
   }
 
   function openEdit(u: User) {
+    setContextMenuUser(null);
     // Determine school from department
     const dept = allDepartments.find((d) => d.id === u.department);
     setEditId(u.id);
@@ -387,6 +606,33 @@ export default function AdminUsersPage() {
     setSheetOpen(true);
   }
 
+  async function openProfile(user: User) {
+    setContextMenuUser(null);
+    const cachedUser = profileCacheRef.current.get(user.id);
+
+    if (cachedUser) {
+      setProfileUser(cachedUser);
+      setProfileLoading(false);
+      setProfileOpen(true);
+      return;
+    }
+
+    setProfileUser(null);
+    setProfileOpen(true);
+    setProfileLoading(true);
+
+    try {
+      const { data } = await usersService.get(user.id);
+      profileCacheRef.current.set(user.id, data);
+      setProfileUser(data);
+    } catch {
+      toast.error("Failed to load user profile details");
+      setProfileOpen(false);
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -410,6 +656,7 @@ export default function AdminUsersPage() {
           rest as unknown as Parameters<typeof usersService.update>[1],
         );
         toast.success("User updated successfully");
+        profileCacheRef.current.delete(editId);
       } else {
         await usersService.create(
           submitData as unknown as Parameters<typeof usersService.create>[0],
@@ -428,12 +675,35 @@ export default function AdminUsersPage() {
   }
 
   function openResetPassword(user: User) {
+    setContextMenuUser(null);
     setResetPwUserId(user.id);
     setResetPwUserName(`${user.first_name} ${user.last_name}`);
     setNewPassword("");
     setConfirmPassword("");
     setShowNewPw(false);
     setResetPwOpen(true);
+  }
+
+  async function handleDeleteUser(user: User) {
+    setContextMenuUser(null);
+    setDeleteUser(user);
+  }
+
+  async function confirmDeleteUser() {
+    if (!deleteUser) return;
+    setDeletingUser(true);
+
+    try {
+      await usersService.delete(deleteUser.id);
+      profileCacheRef.current.delete(deleteUser.id);
+      toast.success("User deleted successfully");
+      setDeleteUser(null);
+      fetchUsers({ showLoading: true });
+    } catch {
+      toast.error("Failed to delete user");
+    } finally {
+      setDeletingUser(false);
+    }
   }
 
   async function handleResetPassword() {
@@ -463,17 +733,142 @@ export default function AdminUsersPage() {
     if (!bulkUploadFile) return;
     setBulkUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", bulkUploadFile);
-      await usersService.bulkCreate(formData);
-      toast.success("Users imported successfully");
+      const extension = bulkUploadFile.name.split(".").pop()?.toLowerCase();
+      const content = await bulkUploadFile.text();
+
+      let rows: Record<string, string>[] = [];
+      if (extension === "json") {
+        const parsed = JSON.parse(content);
+        const inputRows = Array.isArray(parsed) ? parsed : parsed?.users;
+        if (!Array.isArray(inputRows)) {
+          throw new Error("JSON must be an array or an object with a users array.");
+        }
+        rows = inputRows.map((row) =>
+          Object.fromEntries(
+            Object.entries(row as Record<string, unknown>).map(([key, value]) => [
+              normalizeCsvHeader(key),
+              value == null ? "" : String(value),
+            ]),
+          ),
+        );
+      } else {
+        rows = parseCsvRecords(content);
+      }
+
+      if (rows.length === 0) {
+        throw new Error("No valid rows were found in the selected file.");
+      }
+
+      const payloadUsers = rows.map<BulkUploadUser>((row, index) => {
+        const role = (row.role || "student").trim().toLowerCase();
+        const departmentId = resolveEntityId(
+          row.department,
+          allDepartments,
+          [(department) => department.name],
+        );
+        const programId = resolveEntityId(
+          row.program,
+          allPrograms,
+          [(program) => program.name, (program) => program.code],
+        );
+
+        if (!row.email || !row.password || !row.first_name || !row.last_name) {
+          throw new Error(`Row ${index + 2} is missing one of: email, password, first_name, last_name.`);
+        }
+
+        const base: BulkUploadUser = {
+          email: row.email,
+          password: row.password,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          role,
+        };
+
+        if (departmentId) base.department = departmentId;
+        if (row.phone) base.phone = row.phone;
+
+        if (role === "student") {
+          base.student_profile = {
+            student_id_number: row.student_id_number || "",
+            roll_no: row.roll_no || "",
+            register_no: row.register_no || "",
+            program: programId || row.program || "",
+            current_semester: row.current_semester ? Number(row.current_semester) : 1,
+            admission_date: row.admission_date || "",
+            batch_year: row.batch_year ? Number(row.batch_year) : undefined,
+            batch: row.batch || "",
+            division: row.division || "",
+          };
+        }
+
+        if (["faculty", "dean", "head"].includes(role)) {
+          base.faculty_profile = {
+            employee_id: row.employee_id || "",
+            designation: row.designation || "",
+            specialization: row.specialization || "",
+            joining_date: row.joining_date || "",
+            consultation_hours: row.consultation_hours || "",
+          };
+        }
+
+        return base;
+      });
+
+      await usersService.bulkCreate({ users: payloadUsers });
+      toast.success(`${payloadUsers.length} user${payloadUsers.length === 1 ? "" : "s"} imported successfully`);
       setBulkUploadOpen(false);
       setBulkUploadFile(null);
       fetchUsers({ showLoading: true });
-    } catch {
-      toast.error("Failed to upload users");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to upload users";
+      toast.error(message);
     } finally {
       setBulkUploading(false);
+    }
+  }
+
+  function handleToggleUserSelection(userId: string, checked: boolean) {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
+  }
+
+  function handleToggleVisibleUsers(checked: boolean) {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      paginatedUsers.forEach((user) => {
+        if (checked) next.add(user.id);
+        else next.delete(user.id);
+      });
+      return next;
+    });
+  }
+
+  async function handleExportUsers(scope: "selected" | "filtered" | "template") {
+    setExportingUsers(true);
+    try {
+      if (scope === "template") {
+        downloadCsv("users-import-template.csv", BULK_IMPORT_TEMPLATE);
+        toast.success("Import template downloaded");
+        return;
+      }
+
+      const rows = scope === "selected" ? exportableUsers(selectedUsers) : exportableUsers(filteredUsers);
+      if (rows.length === 0) {
+        toast.error(scope === "selected" ? "Select at least one user to export" : "No users available to export");
+        return;
+      }
+
+      downloadCsv(
+        `users-${scope}-${new Date().toISOString().slice(0, 10)}.csv`,
+        rows,
+      );
+      toast.success(`${rows.length} user${rows.length === 1 ? "" : "s"} exported successfully`);
+    } finally {
+      setExportingUsers(false);
     }
   }
 
@@ -488,11 +883,13 @@ export default function AdminUsersPage() {
     try {
       if (user.is_active) {
         await usersService.delete(user.id);
+        profileCacheRef.current.delete(user.id);
         toast.success("User deactivated");
       } else {
         await usersService.update(user.id, {
           is_active: true,
         } as unknown as Parameters<typeof usersService.update>[1]);
+        profileCacheRef.current.delete(user.id);
         toast.success("User activated");
       }
     } catch {
@@ -590,6 +987,18 @@ export default function AdminUsersPage() {
                   <Button
                     size="sm"
                     className="h-9 gap-1 shrink-0"
+                    variant="outline"
+                    onClick={() => handleExportUsers(selectedUsers.length > 0 ? "selected" : "filtered")}
+                    disabled={exportingUsers || filteredUsers.length === 0}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">
+                      {selectedUsers.length > 0 ? `Export Selected (${selectedUsers.length})` : "Export CSV"}
+                    </span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-9 gap-1 shrink-0"
                     onClick={openCreate}
                   >
                     <UserPlus className="h-3.5 w-3.5" /><span className="hidden sm:inline">Add User</span>
@@ -669,6 +1078,13 @@ export default function AdminUsersPage() {
                   <Table aria-label="Users">
                     <Table.Header className="sticky top-0 z-10 bg-secondary/95 backdrop-blur shadow-sm">
                       <Table.Row>
+                        <Table.Head className="w-12">
+                          <Checkbox
+                            checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                            onCheckedChange={(checked) => handleToggleVisibleUsers(checked === true)}
+                            aria-label="Select all visible users"
+                          />
+                        </Table.Head>
                         <Table.Head isRowHeader>
                           <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
                             Name
@@ -782,6 +1198,13 @@ export default function AdminUsersPage() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </Table.Head>
+                        <Table.Head>
+                          <div className="flex w-full justify-start">
+                            <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                              Actions
+                            </span>
+                          </div>
+                        </Table.Head>
                       </Table.Row>
                     </Table.Header>
                     <Table.Body>
@@ -790,10 +1213,10 @@ export default function AdminUsersPage() {
                           <Table.Cell
                             colSpan={
                               roleFilter === "student"
-                                ? 9
+                                ? 11
                                 : roleFilter === "all"
-                                  ? 7
-                                  : 6
+                                  ? 9
+                                  : 8
                             }
                             className="text-center py-8 text-muted-foreground"
                           >
@@ -814,17 +1237,19 @@ export default function AdminUsersPage() {
                                   : ""
                             }
                           >
+                            <Table.Cell>
+                              <Checkbox
+                                checked={selectedUserIds.has(u.id)}
+                                onCheckedChange={(checked) => handleToggleUserSelection(u.id, checked === true)}
+                                aria-label={`Select ${u.first_name} ${u.last_name}`}
+                                onClick={(event) => event.stopPropagation()}
+                              />
+                            </Table.Cell>
                             <Table.Cell className="font-medium">
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8 rounded-[calc(var(--radius)-2px)] border border-border">
                                   <AvatarImage
-                                    src={
-                                      u.profile_picture
-                                        ? u.profile_picture.startsWith("http")
-                                          ? u.profile_picture
-                                          : `${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace("/api/v1", "")}${u.profile_picture}`
-                                        : undefined
-                                    }
+                                    src={resolveProfileImageUrl(u.profile_picture)}
                                     alt={u.first_name}
                                   />
                                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
@@ -833,18 +1258,20 @@ export default function AdminUsersPage() {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <div
-                                    className="text-sm font-medium leading-none flex items-center gap-1.5"
+                                  <button
+                                    type="button"
+                                    onClick={() => openProfile(u)}
+                                    className="text-sm font-medium leading-none flex items-center gap-1.5 hover:text-primary transition-colors"
                                     title={
                                       deanOfSchoolMap.has(u.id)
                                         ? `Dean of ${deanOfSchoolMap.get(u.id)}`
                                         : headOfDeptMap.has(u.id)
                                           ? `Head of ${headOfDeptMap.get(u.id)}`
-                                          : undefined
+                                          : "View profile"
                                     }
                                   >
                                     {u.first_name} {u.last_name}
-                                  </div>
+                                  </button>
                                   {roleFilter === "student" && (
                                     <div className="text-xs text-muted-foreground mt-1">
                                       {u.email}
@@ -907,6 +1334,66 @@ export default function AdminUsersPage() {
                                 {u.is_active ? "Active" : "Inactive"}
                               </Badge>
                             </Table.Cell>
+                            <Table.Cell>
+                              <div className="flex w-full items-center justify-start gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hidden sm:inline-flex h-8 w-8"
+                                  onClick={() => openEdit(u)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Edit user</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteUser(u)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete user</span>
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">More actions</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => openProfile(u)}>
+                                      <Eye className="mr-2 h-4 w-4" /> View Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => openEdit(u)}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => openResetPassword(u)}>
+                                      <KeyRound className="mr-2 h-4 w-4" /> Reset Password
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleToggleActive(u)}>
+                                      <ToggleRight className="mr-2 h-4 w-4" /> {u.is_active ? "Deactivate" : "Activate"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteUser(u)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </Table.Cell>
                           </Table.Row>
                         ))
                       )}
@@ -922,6 +1409,11 @@ export default function AdminUsersPage() {
                     {filteredUsers.length} user
                     {filteredUsers.length !== 1 ? "s" : ""} total
                   </span>
+                  {selectedUsers.length > 0 && (
+                    <span>
+                      • {selectedUsers.length} selected
+                    </span>
+                  )}
                   {activeFilters > 0 && (
                     <span>
                       • {activeFilters} filter{activeFilters !== 1 ? "s" : ""}{" "}
@@ -988,15 +1480,18 @@ export default function AdminUsersPage() {
         </ContextMenuTrigger>
         {contextMenuUser && (
           <ContextMenuContent className="w-48">
-            <ContextMenuItem onClick={() => openEdit(contextMenuUser)}>
+            <ContextMenuItem onClick={() => contextMenuUser && openEdit(contextMenuUser)}>
               <Pencil className="mr-2 h-4 w-4" /> Edit User
             </ContextMenuItem>
-            <ContextMenuItem onClick={() => openResetPassword(contextMenuUser)}>
+            <ContextMenuItem onClick={() => contextMenuUser && openProfile(contextMenuUser)}>
+              <Eye className="mr-2 h-4 w-4" /> View Profile
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => contextMenuUser && openResetPassword(contextMenuUser)}>
               <KeyRound className="mr-2 h-4 w-4" /> Reset Password
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
-              onClick={() => handleToggleActive(contextMenuUser)}
+              onClick={() => contextMenuUser && handleToggleActive(contextMenuUser)}
             >
               <ToggleRight className="mr-2 h-4 w-4" /> Toggle Active
             </ContextMenuItem>
@@ -1004,17 +1499,16 @@ export default function AdminUsersPage() {
         )}
       </ContextMenu>
 
-      {/* Add/Edit User Sheet (slide-out) */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="right">
-          <SheetHeader>
-            <SheetTitle>{editId ? "Edit User" : "Create New User"}</SheetTitle>
-            <SheetDescription>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent forceMount className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? "Edit User" : "Create New User"}</DialogTitle>
+            <DialogDescription>
               {editId
                 ? "Update user details."
                 : "Add a new user to the system."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form
             onSubmit={handleSubmit}
             className="flex flex-col gap-4 px-4 flex-1 overflow-y-auto"
@@ -1368,15 +1862,208 @@ export default function AdminUsersPage() {
               </div>
             )}
 
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={saving} className="w-full">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editId ? "Update User" : "Create User"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={profileOpen}
+        onOpenChange={(open) => {
+          setProfileOpen(open);
+          if (!open) setProfileUser(null);
+        }}
+      >
+        <DialogContent forceMount className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Profile</DialogTitle>
+            <DialogDescription>
+              Complete profile details for the selected user.
+            </DialogDescription>
+          </DialogHeader>
+
+          {profileLoading && !profileUser ? (
+            <div className="space-y-4 py-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          ) : profileUser ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center rounded-xl border bg-muted/20 p-4">
+                <Avatar className="h-20 w-20 rounded-xl border border-border">
+                  <AvatarImage
+                    src={resolveProfileImageUrl(profileUser.profile_picture)}
+                    alt={`${profileUser.first_name} ${profileUser.last_name}`}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                    {profileUser.first_name?.[0]}
+                    {profileUser.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-2 flex-1">
+                  <div>
+                    <h3 className="text-xl font-semibold">
+                      {profileUser.first_name} {profileUser.last_name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <Badge variant="secondary" className={ROLE_COLORS[profileUser.role] ?? ""}>
+                        {ROLE_ICONS[profileUser.role]} {profileUser.role}
+                      </Badge>
+                      <Badge variant={profileUser.is_active ? "default" : "secondary"}>
+                        {profileUser.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                    <div>
+                      <span className="font-medium text-foreground">Email:</span> {profileUser.email}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Phone:</span> {profileUser.phone || "—"}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">School:</span> {profileUser.school_name || "—"}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Department:</span> {profileUser.department_name || "—"}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Created:</span> {formatDisplayDate(profileUser.created_at)}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Last login:</span> {formatDisplayDate(profileUser.last_login)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {profileUser.student_profile && (
+                <div className="rounded-xl border p-4 space-y-3">
+                  <h4 className="font-semibold">Student Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div><span className="font-medium">Enrollment No:</span> {profileUser.student_profile.student_id_number || "—"}</div>
+                    <div><span className="font-medium">Register No:</span> {profileUser.student_profile.register_no || "—"}</div>
+                    <div><span className="font-medium">Roll No:</span> {profileUser.student_profile.roll_no || "—"}</div>
+                    <div><span className="font-medium">Program:</span> {profileUser.program_name || "—"}</div>
+                    <div><span className="font-medium">Semester:</span> {profileUser.student_profile.current_semester || "—"}</div>
+                    <div><span className="font-medium">Admission Date:</span> {formatDisplayDate(profileUser.student_profile.admission_date)}</div>
+                    <div><span className="font-medium">Batch Year:</span> {profileUser.student_profile.batch_year || "—"}</div>
+                    <div><span className="font-medium">Batch / Division:</span> {profileUser.student_profile.batch || "—"} / {profileUser.student_profile.division || "—"}</div>
+                  </div>
+                </div>
+              )}
+
+              {profileUser.faculty_profile && (
+                <div className="rounded-xl border p-4 space-y-3">
+                  <h4 className="font-semibold">Faculty Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div><span className="font-medium">Employee ID:</span> {profileUser.faculty_profile.employee_id || "—"}</div>
+                    <div><span className="font-medium">Designation:</span> {profileUser.faculty_profile.designation || "—"}</div>
+                    <div><span className="font-medium">Specialization:</span> {profileUser.faculty_profile.specialization || "—"}</div>
+                    <div><span className="font-medium">Joining Date:</span> {formatDisplayDate(profileUser.faculty_profile.joining_date)}</div>
+                  </div>
+                </div>
+              )}
+
+              {profileUser.preferences && (
+                <div className="rounded-xl border p-4 space-y-3">
+                  <h4 className="font-semibold">Preferences</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div><span className="font-medium">Theme:</span> {profileUser.preferences.theme || "—"}</div>
+                    <div><span className="font-medium">Language:</span> {profileUser.preferences.language || "—"}</div>
+                    <div><span className="font-medium">Timezone:</span> {profileUser.preferences.timezone || "—"}</div>
+                    <div><span className="font-medium">Date Format:</span> {profileUser.preferences.date_format || "—"}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-6 text-sm text-muted-foreground">No profile data available.</div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfileOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!deleteUser}
+        onOpenChange={(open) => {
+          if (!open && !deletingUser) setDeleteUser(null);
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteUser
+                ? `This will permanently remove ${deleteUser.first_name} ${deleteUser.last_name}. This action cannot be undone.`
+                : "This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingUser}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} disabled={deletingUser}>
+              {deletingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete user
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Bulk import users</DialogTitle>
+            <DialogDescription>
+              Upload a CSV or JSON file with user records. Use the template to match the supported column names.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleBulkUpload} className="space-y-4">
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="bulk-user-file">Import file</Label>
+                <Input
+                  id="bulk-user-file"
+                  type="file"
+                  accept=".csv,.json,application/json,text/csv"
+                  onChange={(event) => setBulkUploadFile(event.target.files?.[0] ?? null)}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Required columns: email, password, first_name, last_name.</p>
+                <p>Optional columns: role, department, phone, student_id_number, register_no, program, current_semester, employee_id, designation, joining_date.</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">
+              <span>Need a sample file?</span>
+              <div>
+                <Button type="button" variant="outline" size="sm" onClick={() => handleExportUsers("template")}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download template
+                </Button>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setBulkUploadOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={bulkUploading || !bulkUploadFile}>
+                {bulkUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Import users
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset Password Dialog */}
       <Dialog open={resetPwOpen} onOpenChange={setResetPwOpen}>

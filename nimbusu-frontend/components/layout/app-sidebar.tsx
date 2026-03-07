@@ -27,6 +27,7 @@ import {
     ScrollText,
     Settings,
     Library,
+    Brain,
 } from "lucide-react";
 import {
     Sidebar,
@@ -53,6 +54,7 @@ const adminNav = [
     { title: "Departments", url: "/admin/departments", icon: Building2 },
     { title: "Academics", url: "/admin/academics", icon: GraduationCap },
     { title: "Timetable", url: "/admin/timetable", icon: Calendar },
+    { title: "Daily Questions", url: "/admin/daily-questions", icon: Brain },
     { title: "Content", url: "/admin/content", icon: FileText },
     { title: "Announcements", url: "/admin/announcements", icon: Bell },
     { title: "Audit Logs", url: "/admin/audit-logs", icon: ScrollText },
@@ -64,6 +66,7 @@ const adminNav = [
 const facultyNav = [
     { title: "Dashboard", url: "/faculty/dashboard", icon: LayoutDashboard },
     { title: "My Courses", url: "/faculty/courses", icon: BookOpen },
+    { title: "Daily Questions", url: "/faculty/daily-questions", icon: Brain },
     { title: "Timetable", url: "/faculty/timetable", icon: Calendar },
     { title: "Attendance", url: "/faculty/attendance", icon: ScrollText },
     { title: "Room Bookings", url: "/faculty/room-bookings", icon: Building },
@@ -75,6 +78,7 @@ const facultyNav = [
 const studentNav = [
     { title: "Dashboard", url: "/student/dashboard", icon: LayoutDashboard },
     { title: "My Courses", url: "/student/courses", icon: BookOpen },
+    { title: "Daily Questions", url: "/student/daily-questions", icon: Brain },
     { title: "Content", url: "/student/content", icon: FileText },
     { title: "Bookmarks", url: "/student/bookmarks", icon: BookMarked },
     { title: "Assignments", url: "/student/assignments", icon: ClipboardList },

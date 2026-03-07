@@ -397,16 +397,16 @@ class GlobalSearchView(APIView):
         announcement_qs = Announcement.objects.all()
         if role == "student":
             announcement_qs = announcement_qs.filter(
-                Q(course_offering__isnull=True) |
-                Q(course_offering__enrollments__student=user)
+                Q(target_type__isnull=True) |
+                Q(target_type="all")
             )
         elif role != "admin":
             announcement_qs = announcement_qs.filter(
-                Q(course_offering__isnull=True) |
-                Q(course_offering__faculty=user)
+                Q(target_type__isnull=True) |
+                Q(target_type="all")
             )
         announcement_qs = announcement_qs.filter(
-            Q(title__icontains=q) | Q(content__icontains=q)
+            Q(title__icontains=q) | Q(body__icontains=q)
         ).distinct()[:5]
         
         announcements_data = [
@@ -431,7 +431,10 @@ class GlobalSearchView(APIView):
                 course_offering__faculty=user
             )
         forum_qs = forum_qs.filter(
-            Q(title__icontains=q) | Q(description__icontains=q)
+            Q(title__icontains=q)
+            | Q(posts__body__icontains=q)
+            | Q(created_by__first_name__icontains=q)
+            | Q(created_by__last_name__icontains=q)
         ).distinct()[:5]
         
         forums_data = [

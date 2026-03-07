@@ -6,6 +6,7 @@ import type { Content } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
   Select,
   SelectContent,
@@ -13,6 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -26,13 +34,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Search,
   FileText,
@@ -45,6 +53,7 @@ import {
   ExternalLink,
   Pencil,
   Loader2,
+  MoreHorizontal,
 } from "lucide-react";
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -83,6 +92,7 @@ export default function AdminContentPage() {
       abortRef.current = controller;
       try {
         const params: Record<string, string> = {};
+        params.page_size = "1000";
         const q = opts?.searchOverride ?? search;
         if (q) params.search = q;
         if (typeFilter !== "all") params.content_type = typeFilter;
@@ -116,6 +126,7 @@ export default function AdminContentPage() {
   };
 
   async function handleDelete(id: string) {
+    setCtxItem(null);
     const prev = [...items];
     setItems((i) => i.filter((x) => x.id !== id));
     try {
@@ -128,6 +139,7 @@ export default function AdminContentPage() {
   }
 
   function openEdit(c: Content) {
+    setCtxItem(null);
     setEditId(c.id);
     setForm({
       title: c.title,
@@ -136,6 +148,14 @@ export default function AdminContentPage() {
     });
     setSheetOpen(true);
   }
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(items);
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
@@ -223,13 +243,18 @@ export default function AdminContentPage() {
                           Date
                         </span>
                       </Table.Head>
+                      <Table.Head>
+                        <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                          Actions
+                        </span>
+                      </Table.Head>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {items.length === 0 ? (
                       <Table.Row id="empty">
                         <Table.Cell
-                          colSpan={5}
+                          colSpan={6}
                           className="text-center py-8 text-muted-foreground"
                         >
                           <File className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -237,7 +262,7 @@ export default function AdminContentPage() {
                         </Table.Cell>
                       </Table.Row>
                     ) : (
-                      items.map((c) => (
+                      paginatedItems.map((c) => (
                         <Table.Row
                           key={c.id}
                           id={c.id}
@@ -265,6 +290,55 @@ export default function AdminContentPage() {
                           <Table.Cell className="text-muted-foreground">
                             {new Date(c.created_at).toLocaleDateString()}
                           </Table.Cell>
+                          <Table.Cell>
+                            <div className="flex w-full items-center justify-start gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="hidden sm:inline-flex h-8 w-8"
+                                onClick={() => openEdit(c)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Edit content</span>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(c.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete content</span>
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">More actions</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  {c.external_url && (
+                                    <DropdownMenuItem onClick={() => window.open(c.external_url!, "_blank") }>
+                                      <ExternalLink className="mr-2 h-4 w-4" /> Open Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => openEdit(c)}>
+                                    <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDelete(c.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </Table.Cell>
                         </Table.Row>
                       ))
                     )}
@@ -272,11 +346,16 @@ export default function AdminContentPage() {
                 </Table>
               )}
 
-              <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                <span>
-                  {items.length} item{items.length !== 1 ? "s" : ""}
-                </span>
-              </div>
+              <TablePaginationFooter
+                count={items.length}
+                itemLabel="item"
+                activeFiltersLabel={typeFilter !== "all" ? `Type: ${typeFilter}` : null}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
             </TableCard.Root>
           </div>
         </ContextMenuTrigger>
@@ -312,14 +391,14 @@ export default function AdminContentPage() {
         </ContextMenuContent>
       </ContextMenu>
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="right">
-          <SheetHeader>
-            <SheetTitle>Edit Content Details</SheetTitle>
-            <SheetDescription>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Content Details</DialogTitle>
+            <DialogDescription>
               Update title, description, or visibility.
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form
             onSubmit={handleUpdate}
             className="flex flex-col gap-4 px-4 flex-1 mt-4"
@@ -361,15 +440,15 @@ export default function AdminContentPage() {
                 </SelectContent>
               </Select>
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={saving} className="w-full mt-4">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Content
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

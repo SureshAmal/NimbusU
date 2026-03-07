@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
   Select,
   SelectContent,
@@ -44,7 +45,7 @@ export default function StudentAttendancePage() {
   const fetchRecords = useCallback(async (opts?: { showLoading?: boolean }) => {
     if (opts?.showLoading) setInitialLoading(true);
     try {
-      const { data } = await attendanceService.mine();
+      const { data } = await attendanceService.mine({ page_size: "1000" });
       setRecords(data.results ?? []);
     } catch {
       toast.error("Failed to load attendance");
@@ -67,6 +68,14 @@ export default function StudentAttendancePage() {
       (r.remarks ?? "").toLowerCase().includes(q)
     );
   });
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(filtered);
 
   const present = records.filter(
     (r) => r.status === "present" || r.status === "late",
@@ -231,7 +240,7 @@ export default function StudentAttendancePage() {
                 </Table.Cell>
               </Table.Row>
             ) : (
-              filtered.map((r) => (
+              paginatedItems.map((r) => (
                 <Table.Row key={r.id} id={r.id}>
                   <Table.Cell className="font-medium">
                     {new Date(r.date).toLocaleDateString()}
@@ -253,12 +262,16 @@ export default function StudentAttendancePage() {
           </Table.Body>
         </Table>
 
-        <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-          <span>
-            {filtered.length} record{filtered.length !== 1 ? "s" : ""}
-          </span>
-          {statusFilter !== "all" && <span>Filtered by: {statusFilter}</span>}
-        </div>
+        <TablePaginationFooter
+          count={filtered.length}
+          itemLabel="record"
+          activeFiltersLabel={statusFilter !== "all" ? `Filtered by: ${statusFilter}` : null}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </TableCard.Root>
     </div>
   );

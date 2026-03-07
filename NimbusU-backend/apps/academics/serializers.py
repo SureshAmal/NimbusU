@@ -222,7 +222,9 @@ class DailyQuestionListSerializer(serializers.ModelSerializer):
         model = DailyQuestion
         fields = [
             "id", "title", "description", "question_type", "question_type_display",
-            "difficulty", "difficulty_display", "points", "time_limit_minutes",
+            "difficulty", "difficulty_display", "question_text", "options",
+            "correct_answer", "starter_code", "language",
+            "points", "time_limit_minutes",
             "scheduled_date", "start_time", "end_time", "is_active",
             "course_offering", "course_name", "created_by", "created_by_name",
             "created_at", "total_assignments",
@@ -237,12 +239,24 @@ class DailyQuestionListSerializer(serializers.ModelSerializer):
 class DailyQuestionAssignmentSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
     question_title = serializers.CharField(source="question.title", read_only=True)
+    question_type = serializers.CharField(source="question.question_type", read_only=True)
+    question_text = serializers.CharField(source="question.question_text", read_only=True)
+    options = serializers.JSONField(source="question.options", read_only=True)
+    starter_code = serializers.CharField(source="question.starter_code", read_only=True)
+    points = serializers.IntegerField(source="question.points", read_only=True)
+    time_limit_minutes = serializers.IntegerField(source="question.time_limit_minutes", read_only=True)
+    scheduled_date = serializers.DateField(source="question.scheduled_date", read_only=True)
+    start_time = serializers.TimeField(source="question.start_time", read_only=True)
+    end_time = serializers.TimeField(source="question.end_time", read_only=True)
+    is_active = serializers.BooleanField(source="question.is_active", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     
     class Meta:
         model = DailyQuestionAssignment
         fields = [
             "id", "question", "question_title", "student", "student_name",
+            "question_type", "question_text", "options", "starter_code", "points",
+            "time_limit_minutes", "scheduled_date", "start_time", "end_time", "is_active",
             "batch", "status", "status_display", "assigned_at", "started_at",
             "submitted_at", "time_taken_seconds", "points_earned", "is_correct",
             "is_valid", "invalid_reason",

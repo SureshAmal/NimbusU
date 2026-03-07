@@ -11,14 +11,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Table, TableCard } from "@/components/application/table/table";
+import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,7 @@ import {
   X,
   Pencil,
   Paperclip,
+  MoreHorizontal,
 } from "lucide-react";
 
 const DEBOUNCE_MS = 400;
@@ -76,6 +78,7 @@ export default function AdminAnnouncementsPage() {
       abortRef.current = controller;
       try {
         const params: Record<string, string> = {};
+        params.page_size = "1000";
         const q = opts?.searchOverride ?? search;
         if (q) params.search = q;
         const { data } = await announcementsService.list(params);
@@ -113,6 +116,7 @@ export default function AdminAnnouncementsPage() {
   );
 
   function openCreate() {
+    setContextMenuAnnouncement(null);
     setEditId(null);
     setForm({ title: "", body: "", is_urgent: false, target_type: "all" });
     setFiles([]);
@@ -120,6 +124,7 @@ export default function AdminAnnouncementsPage() {
   }
 
   function openEdit(a: Announcement) {
+    setContextMenuAnnouncement(null);
     setEditId(a.id);
     setForm({
       title: a.title,
@@ -161,6 +166,7 @@ export default function AdminAnnouncementsPage() {
   }
 
   async function handleDelete(id: string) {
+    setContextMenuAnnouncement(null);
     setItems((prev) => prev.filter((a) => a.id !== id));
     try {
       await announcementsService.delete(id);
@@ -180,6 +186,14 @@ export default function AdminAnnouncementsPage() {
   }, [items, priorityFilter]);
 
   const activeFilters = priorityFilter !== "all" ? 1 : 0;
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(filteredItems);
 
   return (
     <div className="space-y-0">
@@ -292,20 +306,25 @@ export default function AdminAnnouncementsPage() {
                           Date
                         </span>
                       </Table.Head>
+                      <Table.Head>
+                        <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                          Actions
+                        </span>
+                      </Table.Head>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {filteredItems.length === 0 ? (
                       <Table.Row id="empty">
                         <Table.Cell
-                          colSpan={5}
+                          colSpan={6}
                           className="text-center py-8 text-muted-foreground"
                         >
                           No announcements.
                         </Table.Cell>
                       </Table.Row>
                     ) : (
-                      filteredItems.map((a) => (
+                      paginatedItems.map((a) => (
                         <Table.Row
                           key={a.id}
                           id={a.id}
@@ -337,6 +356,50 @@ export default function AdminAnnouncementsPage() {
                           <Table.Cell className="text-muted-foreground">
                             {new Date(a.created_at).toLocaleDateString()}
                           </Table.Cell>
+                          <Table.Cell>
+                            <div className="flex w-full items-center justify-start gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="hidden sm:inline-flex h-8 w-8"
+                                onClick={() => openEdit(a)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Edit announcement</span>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="hidden sm:inline-flex h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(a.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete announcement</span>
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">More actions</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  <DropdownMenuItem onClick={() => openEdit(a)}>
+                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDelete(a.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </Table.Cell>
                         </Table.Row>
                       ))
                     )}
@@ -344,15 +407,16 @@ export default function AdminAnnouncementsPage() {
                 </Table>
               )}
 
-              <div className="flex items-center justify-between border-t border-secondary px-4 py-2 text-xs text-muted-foreground">
-                <span>
-                  {filteredItems.length} announcement
-                  {filteredItems.length !== 1 ? "s" : ""}
-                </span>
-                {activeFilters > 0 && (
-                  <span>{activeFilters} filter applied</span>
-                )}
-              </div>
+              <TablePaginationFooter
+                count={filteredItems.length}
+                itemLabel="announcement"
+                activeFiltersLabel={activeFilters > 0 ? `${activeFilters} filter applied` : null}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
             </TableCard.Root>
           </div>
         </ContextMenuTrigger>
@@ -372,16 +436,16 @@ export default function AdminAnnouncementsPage() {
         )}
       </ContextMenu>
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="right">
-          <SheetHeader>
-            <SheetTitle>{editId ? "Edit" : "New"} Announcement</SheetTitle>
-            <SheetDescription>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? "Edit" : "New"} Announcement</DialogTitle>
+            <DialogDescription>
               {editId
                 ? "Update this announcement."
                 : "Publish an announcement to users."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form
             onSubmit={handleSubmit}
             className="flex flex-col gap-4 px-4 flex-1"
@@ -419,15 +483,15 @@ export default function AdminAnnouncementsPage() {
                 onChange={(e) => setFiles(Array.from(e.target.files || []))}
               />
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button type="submit" disabled={saving} className="w-full">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{" "}
                 {editId ? "Update" : "Publish"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

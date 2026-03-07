@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { timetableService, substituteFacultyService, classCancellationService } from "@/services/api";
-import api from "@/lib/api";
+import { timetableService, substituteFacultyService, classCancellationService, usersService } from "@/services/api";
 import type { TimetableEntry, User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -16,13 +15,6 @@ import {
     CalendarEvent,
 } from "@/components/application/modern-calendar";
 import { format, parse, setDay, startOfWeek, addWeeks } from "date-fns";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription,
-} from "@/components/ui/sheet";
 import { MapPin, Users, Tag, Clock, UserPlus, CalendarX2, Loader2 } from "lucide-react";
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -92,7 +84,7 @@ export default function FacultyTimetablePage() {
                 setEntries(Array.isArray(data) ? data : (data.results ?? []));
 
                 // Fetch faculty list for substitute selection
-                const facRes = await api.get("/users/?role=faculty");
+                const facRes = await usersService.list({ role: "faculty" });
                 setFacultyList(facRes.data.results ?? facRes.data ?? []);
             } catch { toast.error("Failed to load timetable"); }
             finally { setLoading(false); }
@@ -195,11 +187,11 @@ export default function FacultyTimetablePage() {
                 />
             </div>
 
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent className="w-[400px] sm:w-[540px]">
-                    <SheetHeader>
-                        <SheetTitle className="text-xl">{selectedEvent?.title}</SheetTitle>
-                        <SheetDescription className="flex items-center gap-2 mt-1">
+            <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+                <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">{selectedEvent?.title}</DialogTitle>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                             {selectedEvent?.start && selectedEvent?.end && (
                                 <>
                                     <Clock className="h-4 w-4" />
@@ -208,8 +200,8 @@ export default function FacultyTimetablePage() {
                                     </span>
                                 </>
                             )}
-                        </SheetDescription>
-                    </SheetHeader>
+                        </div>
+                    </DialogHeader>
 
                     {!!selectedEvent?.extendedProps?.entry && (
                         <div className="mt-6 space-y-6">
@@ -263,8 +255,8 @@ export default function FacultyTimetablePage() {
                             </div>
                         </div>
                     )}
-                </SheetContent>
-            </Sheet>
+                </DialogContent>
+            </Dialog>
 
             {/* Substitute Dialog */}
             <Dialog open={subDialog} onOpenChange={setSubDialog}>

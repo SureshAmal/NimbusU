@@ -36,12 +36,15 @@ import type {
     AssignmentGroup,
     SiteSettings,
     StudentTask,
+    StudentDailyQuestionPerformance,
     DiscussionForum,
     DiscussionPost,
     DailyQuestion,
     DailyQuestionAssignment,
-    StudentDailyQuestionPerformance,
+    DailyQuestionResponse,
 } from "@/lib/types";
+
+type DailyQuestionPayload = Record<string, unknown>;
 
 /* ─── Auth ────────────────────────────────────────────────────────── */
 
@@ -54,7 +57,7 @@ export const usersService = {
     update: (id: string, data: Partial<User>) =>
         api.patch<User>(`/users/${id}/`, data),
     delete: (id: string) => api.delete(`/users/${id}/`),
-    bulkCreate: (data: any) =>
+    bulkCreate: (data: { users: Array<Record<string, unknown>> }) =>
         api.post<{ status: string; message: string }>("/users/bulk-create/", data),
     resetPassword: (id: string, new_password: string) =>
         api.post(`/users/${id}/reset-password/`, { new_password }),
@@ -76,7 +79,7 @@ export const usersService = {
 /* ─── Schools ─────────────────────────────────────────────────────── */
 
 export const schoolsService = {
-    list: () => api.get<PaginatedResponse<School>>("/academics/schools/"),
+    list: (params?: Record<string, string>) => api.get<PaginatedResponse<School>>("/academics/schools/", { params }),
     get: (id: string) => api.get<School>(`/academics/schools/${id}/`),
     create: (data: Partial<School>) =>
         api.post<School>("/academics/schools/", data),
@@ -88,7 +91,7 @@ export const schoolsService = {
 /* ─── Departments ─────────────────────────────────────────────────── */
 
 export const departmentsService = {
-    list: () => api.get<PaginatedResponse<Department>>("/departments/"),
+    list: (params?: Record<string, string>) => api.get<PaginatedResponse<Department>>("/departments/", { params }),
     get: (id: string) => api.get<Department>(`/departments/${id}/`),
     create: (data: Partial<Department>) =>
         api.post<Department>("/departments/", data),
@@ -111,7 +114,7 @@ export const programsService = {
 };
 
 export const semestersService = {
-    list: () => api.get<PaginatedResponse<Semester>>("/academics/semesters/"),
+    list: (params?: Record<string, string>) => api.get<PaginatedResponse<Semester>>("/academics/semesters/", { params }),
     current: () => api.get("/academics/semesters/current/"),
     create: (data: Partial<Semester>) =>
         api.post<Semester>("/academics/semesters/", data),
@@ -184,6 +187,43 @@ export const studentTasksService = {
     update: (id: string, data: Partial<StudentTask>) =>
         api.patch<StudentTask>(`/academics/tasks/${id}/`, data),
     delete: (id: string) => api.delete(`/academics/tasks/${id}/`),
+};
+
+export const dailyQuestionsService = {
+    list: (params?: Record<string, string>) =>
+        api.get<PaginatedResponse<DailyQuestion>>("/academics/daily-questions/", { params }),
+    get: (id: string) => api.get<DailyQuestion>(`/academics/daily-questions/${id}/`),
+    create: (data: DailyQuestionPayload) =>
+        api.post<DailyQuestion>("/academics/daily-questions/", data),
+    update: (id: string, data: DailyQuestionPayload) =>
+        api.patch<DailyQuestion>(`/academics/daily-questions/${id}/`, data),
+    delete: (id: string) => api.delete(`/academics/daily-questions/${id}/`),
+    assign: (id: string, data: { student_ids: string[]; batch?: string }) =>
+        api.post(`/academics/daily-questions/${id}/assign/`, data),
+    stats: () => api.get<{
+        total_assigned: number;
+        total_submitted: number;
+        total_correct: number;
+        average_time_seconds: number;
+        accuracy_rate: number;
+    }>("/academics/daily-questions/stats/"),
+    myAssignments: () =>
+        api.get<PaginatedResponse<DailyQuestionAssignment>>("/academics/daily-questions/my-assignments/"),
+    performance: () =>
+        api.get<PaginatedResponse<StudentDailyQuestionPerformance>>("/academics/daily-questions/performance/"),
+    start: (assignmentId: string) =>
+        api.post<{ id: string; started_at: string; status: string }>(`/academics/daily-question-assignments/${assignmentId}/start/`),
+    submit: (
+        assignmentId: string,
+        data: { selected_options?: number[]; code_answer?: string }
+    ) =>
+        api.post<{
+            assignment_id: string;
+            is_correct: boolean;
+            points_earned: number;
+            submitted_at: string;
+            time_taken_seconds: number;
+        }>(`/academics/daily-question-assignments/${assignmentId}/submit/`, data),
 };
 
 /* ─── Assignments ─────────────────────────────────────────────────── */
@@ -281,7 +321,7 @@ export const contentService = {
             api.post<ContentTag>("/content/tags/", data),
     },
     bookmarks: {
-        list: () => api.get("/content/bookmarks/"),
+        list: (params?: Record<string, string>) => api.get("/content/bookmarks/", { params }),
         add: (content_id: string) =>
             api.post("/content/bookmarks/", { content: content_id }),
         remove: (id: string) => api.delete(`/content/bookmarks/${id}/`),
@@ -326,8 +366,8 @@ export const attendanceService = {
         api.patch(`/attendance/${id}/`, data),
     byCourse: (offeringId: string) =>
         api.get<PaginatedResponse<AttendanceRecord>>(`/attendance/course/${offeringId}/`),
-    mine: () =>
-        api.get<PaginatedResponse<AttendanceRecord>>("/attendance/me/"),
+    mine: (params?: Record<string, string>) =>
+        api.get<PaginatedResponse<AttendanceRecord>>("/attendance/me/", { params }),
     myCourse: (offeringId: string) =>
         api.get<PaginatedResponse<AttendanceRecord>>(`/attendance/me/${offeringId}/`),
     summary: (params?: Record<string, string>) =>
@@ -514,63 +554,4 @@ export const swapRequestsService = {
 
 export const rootService = {
     healthCheck: () => api.get("/"),
-};
-
-/* ─── Daily Questions ─────────────────────────────────────────────── */
-
-export const dailyQuestionsService = {
-    list: (params?: Record<string, string>) =>
-        api.get<PaginatedResponse<DailyQuestion>>("/academics/daily-questions/", { params }),
-    get: (id: string) => api.get<DailyQuestion>(`/academics/daily-questions/${id}/`),
-    create: (data: Partial<DailyQuestion>) =>
-        api.post<DailyQuestion>("/academics/daily-questions/", data),
-    update: (id: string, data: Partial<DailyQuestion>) =>
-        api.patch<DailyQuestion>(`/academics/daily-questions/${id}/`, data),
-    delete: (id: string) => api.delete(`/academics/daily-questions/${id}/`),
-    
-    assign: (questionId: string, data: { student_ids: string[]; batch?: string }) =>
-        api.post<{ status: string; message: string }>(
-            `/academics/daily-questions/${questionId}/assign/`,
-            data
-        ),
-    assignByBatch: (data: { question: string; batches: string[]; course_offering?: string }) =>
-        api.post<{ status: string; message: string }>(
-            "/academics/daily-questions/assign-by-batch/",
-            data
-        ),
-    
-    start: (assignmentId: string) =>
-        api.post<{ status: string; started_at: string }>(
-            `/academics/daily-questions/${assignmentId}/start/`
-        ),
-    submit: (assignmentId: string, data: { selected_options?: number[]; code_answer?: string }) =>
-        api.post<{ status: string; is_correct: boolean; marks_obtained: number; time_taken: number }>(
-            `/academics/daily-questions/${assignmentId}/submit/`,
-            data
-        ),
-    grade: (assignmentId: string, data: { marks: number; is_correct: boolean; notes?: string }) =>
-        api.post<{ status: string; marks_obtained: number }>(
-            `/academics/daily-questions/${assignmentId}/grade/`,
-            data
-        ),
-    
-    myAssignments: (params?: Record<string, string>) =>
-        api.get<PaginatedResponse<DailyQuestionAssignment>>(
-            "/academics/daily-questions/my-assignments/",
-            { params }
-        ),
-    performance: (params?: Record<string, string>) =>
-        api.get<PaginatedResponse<StudentDailyQuestionPerformance>>(
-            "/academics/daily-questions/performance/",
-            { params }
-        ),
-    stats: (params?: Record<string, string>) =>
-        api.get<{
-            total_assigned: number;
-            total_submitted: number;
-            total_correct: number;
-            total_pending: number;
-            average_time_seconds: number;
-            accuracy_rate: number;
-        }>("/academics/daily-questions/stats/", { params }),
 };

@@ -15,11 +15,16 @@ import {
 import { contentService } from "@/services/api";
 
 export function GlobalSearch() {
+    const [mounted, setMounted] = React.useState(false);
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
     const [loading, setLoading] = React.useState(false);
     const [results, setResults] = React.useState<{ courses: any[]; content: any[]; users: any[]; assignments: any[]; announcements: any[]; forums: any[] } | null>(null);
     const router = useRouter();
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -82,145 +87,147 @@ export function GlobalSearch() {
                     <span className="text-xs">⌘</span>K
                 </kbd>
             </button>
-            <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>
-                <CommandInput
-                    placeholder="Search across courses, content, and users..."
-                    value={query}
-                    onValueChange={setQuery}
-                />
-                <CommandList>
-                    <CommandEmpty>
-                        {loading ? (
-                            <div className="flex items-center justify-center p-6 space-x-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">Searching...</span>
-                            </div>
-                        ) : query.trim() ? (
-                            "No results found."
-                        ) : (
-                            "Type a command or search..."
+            {mounted && (
+                <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>
+                    <CommandInput
+                        placeholder="Search across courses, content, and users..."
+                        value={query}
+                        onValueChange={setQuery}
+                    />
+                    <CommandList>
+                        <CommandEmpty>
+                            {loading ? (
+                                <div className="flex items-center justify-center p-6 space-x-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground">Searching...</span>
+                                </div>
+                            ) : query.trim() ? (
+                                "No results found."
+                            ) : (
+                                "Type a command or search..."
+                            )}
+                        </CommandEmpty>
+
+                        {!loading && results && (
+                            <>
+                                {results.courses.length > 0 && (
+                                    <CommandGroup heading="Courses">
+                                        {results.courses.map((c) => (
+                                            <CommandItem
+                                                key={c.id}
+                                                value={c.id}
+                                                onSelect={() => runCommand(() => router.push(c.link))}
+                                            >
+                                                <BookOpen className="mr-2 h-4 w-4 text-primary" />
+                                                <div className="flex flex-col">
+                                                    <span>{c.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{c.subtitle}</span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+                                {results.courses.length > 0 && results.content.length > 0 && <CommandSeparator />}
+
+                                {results.content.length > 0 && (
+                                    <CommandGroup heading="Content">
+                                        {results.content.map((c) => (
+                                            <CommandItem
+                                                key={c.id}
+                                                value={c.id}
+                                                onSelect={() => runCommand(() => router.push(c.link))}
+                                            >
+                                                <FileText className="mr-2 h-4 w-4 text-blue-500" />
+                                                <div className="flex flex-col">
+                                                    <span>{c.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{c.subtitle}</span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+                                {results.content.length > 0 && results.users.length > 0 && <CommandSeparator />}
+
+                                {results.users.length > 0 && (
+                                    <CommandGroup heading="Users">
+                                        {results.users.map((u) => (
+                                            <CommandItem
+                                                key={u.id}
+                                                value={u.id}
+                                                onSelect={() => runCommand(() => router.push(u.link))}
+                                            >
+                                                <UserIcon className="mr-2 h-4 w-4 text-emerald-500" />
+                                                <div className="flex flex-col">
+                                                    <span>{u.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{u.subtitle}</span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+
+                                {results.users.length > 0 && (results.assignments.length > 0 || results.announcements.length > 0 || results.forums.length > 0) && <CommandSeparator />}
+
+                                {results.assignments.length > 0 && (
+                                    <CommandGroup heading="Assignments">
+                                        {results.assignments.map((a) => (
+                                            <CommandItem
+                                                key={a.id}
+                                                value={a.id}
+                                                onSelect={() => runCommand(() => router.push(a.link))}
+                                            >
+                                                <ClipboardList className="mr-2 h-4 w-4 text-orange-500" />
+                                                <div className="flex flex-col">
+                                                    <span>{a.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{a.subtitle}</span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+                                {results.assignments.length > 0 && (results.announcements.length > 0 || results.forums.length > 0) && <CommandSeparator />}
+
+                                {results.announcements.length > 0 && (
+                                    <CommandGroup heading="Announcements">
+                                        {results.announcements.map((a) => (
+                                            <CommandItem
+                                                key={a.id}
+                                                value={a.id}
+                                                onSelect={() => runCommand(() => router.push(a.link))}
+                                            >
+                                                <Bell className="mr-2 h-4 w-4 text-yellow-500" />
+                                                <div className="flex flex-col">
+                                                    <span>{a.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{a.subtitle}</span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+                                {results.announcements.length > 0 && results.forums.length > 0 && <CommandSeparator />}
+
+                                {results.forums.length > 0 && (
+                                    <CommandGroup heading="Forums">
+                                        {results.forums.map((f) => (
+                                            <CommandItem
+                                                key={f.id}
+                                                value={f.id}
+                                                onSelect={() => runCommand(() => router.push(f.link))}
+                                            >
+                                                <MessageSquare className="mr-2 h-4 w-4 text-purple-500" />
+                                                <div className="flex flex-col">
+                                                    <span>{f.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{f.subtitle}</span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                )}
+                            </>
                         )}
-                    </CommandEmpty>
-
-                    {!loading && results && (
-                        <>
-                            {results.courses.length > 0 && (
-                                <CommandGroup heading="Courses">
-                                    {results.courses.map((c) => (
-                                        <CommandItem
-                                            key={c.id}
-                                            value={c.id}
-                                            onSelect={() => runCommand(() => router.push(c.link))}
-                                        >
-                                            <BookOpen className="mr-2 h-4 w-4 text-primary" />
-                                            <div className="flex flex-col">
-                                                <span>{c.title}</span>
-                                                <span className="text-xs text-muted-foreground">{c.subtitle}</span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-                            {results.courses.length > 0 && results.content.length > 0 && <CommandSeparator />}
-
-                            {results.content.length > 0 && (
-                                <CommandGroup heading="Content">
-                                    {results.content.map((c) => (
-                                        <CommandItem
-                                            key={c.id}
-                                            value={c.id}
-                                            onSelect={() => runCommand(() => router.push(c.link))}
-                                        >
-                                            <FileText className="mr-2 h-4 w-4 text-blue-500" />
-                                            <div className="flex flex-col">
-                                                <span>{c.title}</span>
-                                                <span className="text-xs text-muted-foreground">{c.subtitle}</span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-                            {results.content.length > 0 && results.users.length > 0 && <CommandSeparator />}
-
-                            {results.users.length > 0 && (
-                                <CommandGroup heading="Users">
-                                    {results.users.map((u) => (
-                                        <CommandItem
-                                            key={u.id}
-                                            value={u.id}
-                                            onSelect={() => runCommand(() => router.push(u.link))}
-                                        >
-                                            <UserIcon className="mr-2 h-4 w-4 text-emerald-500" />
-                                            <div className="flex flex-col">
-                                                <span>{u.title}</span>
-                                                <span className="text-xs text-muted-foreground">{u.subtitle}</span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-
-                            {results.users.length > 0 && (results.assignments.length > 0 || results.announcements.length > 0 || results.forums.length > 0) && <CommandSeparator />}
-
-                            {results.assignments.length > 0 && (
-                                <CommandGroup heading="Assignments">
-                                    {results.assignments.map((a) => (
-                                        <CommandItem
-                                            key={a.id}
-                                            value={a.id}
-                                            onSelect={() => runCommand(() => router.push(a.link))}
-                                        >
-                                            <ClipboardList className="mr-2 h-4 w-4 text-orange-500" />
-                                            <div className="flex flex-col">
-                                                <span>{a.title}</span>
-                                                <span className="text-xs text-muted-foreground">{a.subtitle}</span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-                            {results.assignments.length > 0 && (results.announcements.length > 0 || results.forums.length > 0) && <CommandSeparator />}
-
-                            {results.announcements.length > 0 && (
-                                <CommandGroup heading="Announcements">
-                                    {results.announcements.map((a) => (
-                                        <CommandItem
-                                            key={a.id}
-                                            value={a.id}
-                                            onSelect={() => runCommand(() => router.push(a.link))}
-                                        >
-                                            <Bell className="mr-2 h-4 w-4 text-yellow-500" />
-                                            <div className="flex flex-col">
-                                                <span>{a.title}</span>
-                                                <span className="text-xs text-muted-foreground">{a.subtitle}</span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-                            {results.announcements.length > 0 && results.forums.length > 0 && <CommandSeparator />}
-
-                            {results.forums.length > 0 && (
-                                <CommandGroup heading="Forums">
-                                    {results.forums.map((f) => (
-                                        <CommandItem
-                                            key={f.id}
-                                            value={f.id}
-                                            onSelect={() => runCommand(() => router.push(f.link))}
-                                        >
-                                            <MessageSquare className="mr-2 h-4 w-4 text-purple-500" />
-                                            <div className="flex flex-col">
-                                                <span>{f.title}</span>
-                                                <span className="text-xs text-muted-foreground">{f.subtitle}</span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            )}
-                        </>
-                    )}
-                </CommandList>
-            </CommandDialog>
+                    </CommandList>
+                </CommandDialog>
+            )}
         </>
     );
 }

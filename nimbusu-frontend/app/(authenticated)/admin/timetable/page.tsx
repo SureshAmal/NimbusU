@@ -14,13 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -596,8 +589,7 @@ export default function AdminTimetablePage() {
         />
       </div>
 
-      {/* ────────── Side Sheet: view + inline edit ────────── */}
-      <Sheet
+      <Dialog
         open={sheetOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -606,13 +598,13 @@ export default function AdminTimetablePage() {
           setSheetOpen(open);
         }}
       >
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
             <div className="flex items-center justify-between pr-6">
-              <SheetTitle className="flex items-center gap-2">
+              <DialogTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
                 {selectedEntry?.course_name}
-              </SheetTitle>
+              </DialogTitle>
               {!sheetEditing ? (
                 <Button
                   variant="ghost"
@@ -636,11 +628,11 @@ export default function AdminTimetablePage() {
                 </Button>
               )}
             </div>
-            <SheetDescription>
+            <DialogDescription>
               {selectedEntry?.course_code} •{" "}
               {selectedEntry?.subject_type_display}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           {selectedEntry && !sheetEditing && (
             /* ── View Mode ── */
@@ -835,8 +827,8 @@ export default function AdminTimetablePage() {
               </Button>
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* ────────── Create Dialog (new entries only) ────────── */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
