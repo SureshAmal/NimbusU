@@ -4,12 +4,13 @@ import csv
 from django.db.models import Q
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework import generics, permissions, serializers, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsAdmin, IsAdminOrFaculty, IsFaculty
-from apps.academics.models import Enrollment
+from apps.academics.models import CourseOffering, Enrollment, Semester
 
 from .models import (
     AttendanceRecord, Room, TimetableEntry, TimetableSwapRequest, 
@@ -20,6 +21,7 @@ from .serializers import (
     BulkAttendanceSerializer,
     RoomSerializer,
     TimetableEntrySerializer,
+    TimetableBatchDeleteSerializer,
     TimetableSwapRequestSerializer,
     TimetableSwapCreateSerializer,
     ClassCancellationSerializer,
@@ -52,22 +54,47 @@ class RoomDetailView(generics.RetrieveUpdateDestroyAPIView):
 # ─── Timetable ──────────────────────────────────────────────────────────
 
 
+def _base_timetable_queryset():
+    return TimetableEntry.objects.select_related(
+        "course_offering__course",
+        "course_offering__faculty",
+        "course_offering__course__department",
+        "semester",
+    ).all()
+
+
+def _filter_timetable_queryset(queryset, params):
+    faculty = params.get("faculty")
+    department = params.get("department")
+    batch = params.get("batch")
+    semester = params.get("semester")
+    course_offering = params.get("course_offering")
+    subject_type = params.get("subject_type")
+    is_active = params.get("is_active")
+
+    if faculty:
+        queryset = queryset.filter(course_offering__faculty_id=faculty)
+    if department:
+        queryset = queryset.filter(course_offering__course__department_id=department)
+    if batch:
+        queryset = queryset.filter(batch=batch)
+    if semester:
+        queryset = queryset.filter(semester_id=semester)
+    if course_offering:
+        queryset = queryset.filter(course_offering_id=course_offering)
+    if subject_type:
+        queryset = queryset.filter(subject_type=subject_type)
+    if is_active in {"true", "false"}:
+        queryset = queryset.filter(is_active=is_active == "true")
+    return queryset
+
+
 class TimetableListCreateView(generics.ListCreateAPIView):
     serializer_class = TimetableEntrySerializer
-    filterset_fields = ["semester", "day_of_week", "batch", "subject_type", "is_active"]
+    filterset_fields = ["semester", "day_of_week", "batch", "subject_type", "is_active", "course_offering"]
 
     def get_queryset(self):
-        qs = TimetableEntry.objects.select_related(
-            "course_offering__course",
-            "course_offering__faculty",
-        ).all()
-        faculty = self.request.query_params.get("faculty")
-        department = self.request.query_params.get("department")
-        if faculty:
-            qs = qs.filter(course_offering__faculty_id=faculty)
-        if department:
-            qs = qs.filter(course_offering__course__department_id=department)
-        return qs
+        return _filter_timetable_queryset(_base_timetable_queryset(), self.request.query_params)
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -98,20 +125,273 @@ class MyTimetableView(generics.ListAPIView):
         qs = TimetableEntry.objects.select_related(
             "course_offering__course",
             "course_offering__faculty",
+            "course_offering__course__department",
+            "semester",
         ).filter(is_active=True)
 
         batch = self.request.query_params.get("batch")
-        if batch:
-            qs = qs.filter(batch=batch)
+        course_offering = self.request.query_params.get("course_offering")
+        if course_offering:
+            qs = qs.filter(course_offering_id=course_offering)
 
         if user.role in ("faculty", "dean", "head"):
-            return qs.filter(course_offering__faculty=user)
+            qs = qs.filter(course_offering__faculty=user)
+            if batch:
+                qs = qs.filter(batch=batch)
+            return qs
         elif user.role == "student":
             offering_ids = Enrollment.objects.filter(
                 student=user, status="active"
             ).values_list("course_offering_id", flat=True)
-            return qs.filter(course_offering_id__in=offering_ids)
+            qs = qs.filter(course_offering_id__in=offering_ids)
+
+            student_profile = getattr(user, "student_profile", None)
+            student_batch = getattr(student_profile, "batch", None)
+            if not student_batch:
+                return qs.none()
+
+            return qs.filter(batch=student_batch)
         return qs.none()
+
+
+class TimetableBatchDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    @extend_schema(
+        request=TimetableBatchDeleteSerializer,
+        responses={200: inline_serializer("TimetableBatchDeleteResponse", {
+            "status": serializers.CharField(),
+            "deleted_count": serializers.IntegerField(),
+            "message": serializers.CharField(),
+        })},
+        tags=["Timetable"],
+    )
+    def post(self, request):
+        serializer = TimetableBatchDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        queryset = TimetableEntry.objects.filter(batch=data["batch"])
+        if data.get("semester"):
+            queryset = queryset.filter(semester_id=data["semester"])
+        if data.get("course_offering"):
+            queryset = queryset.filter(course_offering_id=data["course_offering"])
+
+        deleted_count = queryset.count()
+        queryset.delete()
+        return Response({
+            "status": "success",
+            "deleted_count": deleted_count,
+            "message": f"Deleted {deleted_count} timetable entr{'y' if deleted_count == 1 else 'ies'}.",
+        })
+
+
+class TimetableExportCsvView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    @extend_schema(exclude=True)
+    def get(self, request):
+        queryset = _filter_timetable_queryset(_base_timetable_queryset(), request.query_params)
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="timetable.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            "course_code",
+            "academic_year",
+            "semester_name",
+            "section",
+            "course_name",
+            "faculty_name",
+            "batch",
+            "subject_type",
+            "location",
+            "day_of_week",
+            "start_time",
+            "end_time",
+            "is_active",
+            "is_oneoff",
+            "oneoff_date",
+            "course_offering_id",
+            "semester_id",
+        ])
+
+        for entry in queryset.order_by("batch", "day_of_week", "start_time"):
+            writer.writerow([
+                entry.course_offering.course.code,
+                entry.semester.academic_year,
+                entry.semester.name,
+                entry.course_offering.section,
+                entry.course_offering.course.name,
+                entry.course_offering.faculty.full_name,
+                entry.batch,
+                entry.subject_type,
+                entry.location,
+                entry.day_of_week,
+                entry.start_time,
+                entry.end_time,
+                str(entry.is_active).lower(),
+                str(entry.is_oneoff).lower(),
+                entry.oneoff_date.isoformat() if entry.oneoff_date else "",
+                entry.course_offering_id,
+                entry.semester_id,
+            ])
+        return response
+
+
+class TimetableImportCsvView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(exclude=True)
+    def post(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"message": "CSV file is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            decoded_rows = file.read().decode("utf-8-sig").splitlines()
+            reader = csv.DictReader(decoded_rows)
+        except Exception:
+            return Response({"message": "Invalid CSV file."}, status=status.HTTP_400_BAD_REQUEST)
+
+        required_columns = {
+            "batch",
+            "subject_type",
+            "location",
+            "day_of_week",
+            "start_time",
+            "end_time",
+        }
+        fieldnames = set(reader.fieldnames or [])
+        has_uuid_columns = {"course_offering", "semester"}.issubset(fieldnames)
+        has_readable_columns = {"course_code", "academic_year", "semester_name"}.issubset(fieldnames)
+
+        if not reader.fieldnames or not required_columns.issubset(fieldnames) or (not has_uuid_columns and not has_readable_columns):
+            return Response(
+                {
+                    "message": "CSV is missing required columns.",
+                    "required_columns": sorted(required_columns),
+                    "identifier_options": [
+                        ["course_offering", "semester"],
+                        ["course_code", "academic_year", "semester_name", "section(optional)"],
+                    ],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        created_count = 0
+        updated_count = 0
+        errors = []
+
+        for row_index, row in enumerate(reader, start=2):
+            course_offering_value = row.get("course_offering", "").strip()
+            semester_value = row.get("semester", "").strip()
+            course_code = row.get("course_code", "").strip()
+            academic_year = row.get("academic_year", "").strip()
+            semester_name = row.get("semester_name", "").strip()
+            section = row.get("section", "").strip() or "A"
+
+            course_offering_id = None
+            semester_id = None
+
+            if course_offering_value and semester_value:
+                course_offering_id = course_offering_value
+                semester_id = semester_value
+            else:
+                if not (course_code and academic_year and semester_name):
+                    errors.append({
+                        "row": row_index,
+                        "errors": {
+                            "course_identifier": [
+                                "Provide either course_offering + semester UUIDs, or course_code + academic_year + semester_name.",
+                            ]
+                        },
+                    })
+                    continue
+
+                semester = Semester.objects.filter(
+                    name=semester_name,
+                    academic_year=academic_year,
+                ).first()
+                if not semester:
+                    errors.append({
+                        "row": row_index,
+                        "errors": {
+                            "semester_name": [f"No semester found for '{semester_name}' in '{academic_year}'."]
+                        },
+                    })
+                    continue
+
+                offering = CourseOffering.objects.filter(
+                    course__code=course_code,
+                    semester=semester,
+                    section=section,
+                ).select_related("course", "semester").first()
+                if not offering:
+                    errors.append({
+                        "row": row_index,
+                        "errors": {
+                            "course_code": [
+                                f"No course offering found for code '{course_code}', year '{academic_year}', semester '{semester_name}', section '{section}'."
+                            ]
+                        },
+                    })
+                    continue
+
+                course_offering_id = str(offering.id)
+                semester_id = str(semester.id)
+
+            payload = {
+                "course_offering": course_offering_id,
+                "batch": row.get("batch", "").strip(),
+                "subject_type": row.get("subject_type", "").strip(),
+                "location": row.get("location", "").strip(),
+                "day_of_week": row.get("day_of_week", "").strip(),
+                "start_time": row.get("start_time", "").strip(),
+                "end_time": row.get("end_time", "").strip(),
+                "semester": semester_id,
+                "is_active": row.get("is_active", "true").strip().lower() != "false",
+                "is_oneoff": row.get("is_oneoff", "false").strip().lower() == "true",
+                "oneoff_date": row.get("oneoff_date", "").strip() or None,
+            }
+
+            serializer = TimetableEntrySerializer(data=payload)
+            if not serializer.is_valid():
+                errors.append({"row": row_index, "errors": serializer.errors})
+                continue
+
+            validated = serializer.validated_data
+            lookup = {
+                "course_offering": validated["course_offering"],
+                "batch": validated["batch"],
+                "subject_type": validated["subject_type"],
+                "day_of_week": validated["day_of_week"],
+                "start_time": validated["start_time"],
+                "end_time": validated["end_time"],
+                "semester": validated["semester"],
+                "is_oneoff": validated.get("is_oneoff", False),
+                "oneoff_date": validated.get("oneoff_date"),
+            }
+            defaults = {
+                "location": validated["location"],
+                "is_active": validated.get("is_active", True),
+            }
+
+            obj, created = TimetableEntry.objects.update_or_create(**lookup, defaults=defaults)
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        response_status = status.HTTP_201_CREATED if not errors else status.HTTP_207_MULTI_STATUS
+        return Response({
+            "status": "success" if not errors else "partial",
+            "created_count": created_count,
+            "updated_count": updated_count,
+            "errors": errors,
+        }, status=response_status)
 
 
 class TimetableConflictsView(APIView):

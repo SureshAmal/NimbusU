@@ -15,6 +15,7 @@ import {
     LayoutDashboard,
     BookOpen,
     Calendar,
+    CalendarCog,
     FileText,
     Users,
     Settings,
@@ -54,6 +55,9 @@ function useContextMenuGroups(): ContextMenuGroup[] {
             { label: "Departments", icon: <Building2 className="h-4 w-4" />, onClick: go("/admin/departments") },
             { label: "Academics", icon: <BookOpen className="h-4 w-4" />, onClick: go("/admin/academics") },
             { label: "Timetable", icon: <Calendar className="h-4 w-4" />, onClick: go("/admin/timetable") },
+            { label: "Timetable Edit", icon: <CalendarCog className="h-4 w-4" />, onClick: go("/admin/timetable/manage") },
+            { label: "Content Dashboard", icon: <FileText className="h-4 w-4" />, onClick: go("/admin/content/dashboard") },
+            { label: "Content", icon: <FileText className="h-4 w-4" />, onClick: go("/admin/content") },
             { label: "Announcements", icon: <Bell className="h-4 w-4" />, onClick: go("/admin/announcements") },
         ];
     } else if (user?.role === "faculty") {

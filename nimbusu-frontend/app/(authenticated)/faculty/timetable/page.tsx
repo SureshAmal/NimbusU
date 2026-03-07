@@ -61,6 +61,8 @@ export default function FacultyTimetablePage() {
     const [entries, setEntries] = useState<TimetableEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedBatch, setSelectedBatch] = useState("all");
+    const [selectedCourseOffering, setSelectedCourseOffering] = useState("all");
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -92,16 +94,44 @@ export default function FacultyTimetablePage() {
         fetch();
     }, []);
 
+    const batchOptions = useMemo(() => {
+        const batches = new Set(entries.map((entry) => entry.batch).filter(Boolean));
+        return Array.from(batches).sort();
+    }, [entries]);
+
+    const courseOptions = useMemo(() => {
+        const byOffering = new Map<string, { id: string; label: string }>();
+        entries.forEach((entry) => {
+            if (!byOffering.has(entry.course_offering)) {
+                byOffering.set(entry.course_offering, {
+                    id: entry.course_offering,
+                    label: `${entry.course_code} • ${entry.course_name}`,
+                });
+            }
+        });
+        return Array.from(byOffering.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }, [entries]);
+
     const filteredEntries = useMemo(() => {
-        if (!searchQuery) return entries;
+        let filtered = entries;
+
+        if (selectedBatch !== "all") {
+            filtered = filtered.filter((entry) => entry.batch === selectedBatch);
+        }
+
+        if (selectedCourseOffering !== "all") {
+            filtered = filtered.filter((entry) => entry.course_offering === selectedCourseOffering);
+        }
+
+        if (!searchQuery) return filtered;
         const q = searchQuery.toLowerCase();
-        return entries.filter((e) =>
+        return filtered.filter((e) =>
             e.course_name.toLowerCase().includes(q) ||
             e.course_code.toLowerCase().includes(q) ||
             e.location.toLowerCase().includes(q) ||
             e.batch.toLowerCase().includes(q)
         );
-    }, [entries, searchQuery]);
+    }, [entries, searchQuery, selectedBatch, selectedCourseOffering]);
 
     const calendarEvents = useMemo(() => {
         const today = new Date();
@@ -175,6 +205,36 @@ export default function FacultyTimetablePage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-7rem)] min-h-[500px]">
+            <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
+                <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+                    <SelectTrigger className="h-8 w-[160px] text-sm">
+                        <SelectValue placeholder="Filter by batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Batches</SelectItem>
+                        {batchOptions.map((batch) => (
+                            <SelectItem key={batch} value={batch}>
+                                {batch}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                <Select value={selectedCourseOffering} onValueChange={setSelectedCourseOffering}>
+                    <SelectTrigger className="h-8 min-w-[200px] text-sm sm:w-[260px]">
+                        <SelectValue placeholder="Filter by course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Courses</SelectItem>
+                        {courseOptions.map((course) => (
+                            <SelectItem key={course.id} value={course.id}>
+                                {course.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
             <div className="flex-1 min-h-0">
                 <ModernEventCalendar
                     events={calendarEvents}

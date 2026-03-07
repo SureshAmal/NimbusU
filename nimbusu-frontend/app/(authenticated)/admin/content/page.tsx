@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { contentService } from "@/services/api";
-import type { Content } from "@/lib/types";
+import { contentService, offeringsService } from "@/services/api";
+import type { Content, ContentFolder, CourseOffering } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableCard } from "@/components/application/table/table";
@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ContentDetailSheet } from "@/components/application/content/content-detail-sheet";
 import {
   Dialog,
   DialogContent,
@@ -66,20 +67,74 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 const DEBOUNCE_MS = 400;
 
+function formatFileSize(bytes?: number | null) {
+  if (!bytes) return "—";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let idx = 0;
+  while (value >= 1024 && idx < units.length - 1) {
+    value /= 1024;
+    idx += 1;
+  }
+  return `${value >= 10 || idx === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[idx]}`;
+}
+
+function getPublishState(content: Content) {
+  if (!content.is_published) return { label: "Draft", variant: "secondary" as const };
+  if (content.is_expired) return { label: "Expired", variant: "destructive" as const };
+  if (content.is_scheduled) return { label: "Scheduled", variant: "outline" as const };
+  return { label: "Published", variant: "default" as const };
+}
+
+function toDateTimeLocalValue(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (input: number) => input.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function toIsoOrNull(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 export default function AdminContentPage() {
   const [items, setItems] = useState<Content[]>([]);
+  const [folders, setFolders] = useState<ContentFolder[]>([]);
+  const [offerings, setOfferings] = useState<CourseOffering[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [ctxItem, setCtxItem] = useState<Content | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [detailContent, setDetailContent] = useState<Content | null>(null);
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<{
     title: string;
     description: string;
+    content_type: Content["content_type"];
     visibility: Content["visibility"];
-  }>({ title: "", description: "", visibility: "public" });
+    external_url: string;
+    folder: string;
+    course_offering: string;
+    is_published: boolean;
+    publish_at: string;
+    expires_at: string;
+  }>({
+    title: "",
+    description: "",
+    content_type: "document",
+    visibility: "public",
+    external_url: "",
+    folder: "",
+    course_offering: "",
+    is_published: false,
+    publish_at: "",
+    expires_at: "",
+  });
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -112,6 +167,28 @@ export default function AdminContentPage() {
     fetchContent({ showLoading: true });
     return () => abortRef.current?.abort();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      contentService.folders.list({ page_size: "1000" }),
+      offeringsService.list({ page_size: "1000" }),
+    ])
+      .then(([foldersResponse, offeringsResponse]) => {
+        if (cancelled) return;
+        setFolders(foldersResponse.data.results ?? []);
+        setOfferings(offeringsResponse.data.results ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Failed to load content edit options");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     fetchContent();
   }, [typeFilter]);
@@ -144,9 +221,21 @@ export default function AdminContentPage() {
     setForm({
       title: c.title,
       description: c.description || "",
+      content_type: c.content_type,
       visibility: c.visibility,
+      external_url: c.external_url || "",
+      folder: c.folder || "",
+      course_offering: c.course_offering || "",
+      is_published: c.is_published,
+      publish_at: toDateTimeLocalValue(c.publish_at),
+      expires_at: toDateTimeLocalValue(c.expires_at),
     });
     setSheetOpen(true);
+  }
+
+  function openDetail(c: Content) {
+    setCtxItem(null);
+    setDetailContent(c);
   }
   const {
     currentPage,
@@ -162,7 +251,18 @@ export default function AdminContentPage() {
     if (!editId) return;
     setSaving(true);
     try {
-      await contentService.update(editId, form as Partial<Content>);
+      await contentService.update(editId, {
+        title: form.title,
+        description: form.description,
+        content_type: form.content_type,
+        visibility: form.visibility,
+        external_url: form.external_url.trim() || null,
+        folder: form.folder || null,
+        course_offering: form.course_offering || null,
+        is_published: form.is_published,
+        publish_at: toIsoOrNull(form.publish_at),
+        expires_at: toIsoOrNull(form.expires_at),
+      } as Partial<Content>);
       toast.success("Content updated");
       setSheetOpen(false);
       setEditId(null);
@@ -230,17 +330,22 @@ export default function AdminContentPage() {
                       </Table.Head>
                       <Table.Head>
                         <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
-                          Uploaded By
+                          Course
                         </span>
                       </Table.Head>
                       <Table.Head>
                         <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
-                          Visibility
+                          Status
                         </span>
                       </Table.Head>
                       <Table.Head>
                         <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
-                          Date
+                          Tracking
+                        </span>
+                      </Table.Head>
+                      <Table.Head>
+                        <span className="text-xs font-semibold whitespace-nowrap text-quaternary">
+                          Updated
                         </span>
                       </Table.Head>
                       <Table.Head>
@@ -254,7 +359,7 @@ export default function AdminContentPage() {
                     {items.length === 0 ? (
                       <Table.Row id="empty">
                         <Table.Cell
-                          colSpan={6}
+                          colSpan={7}
                           className="text-center py-8 text-muted-foreground"
                         >
                           <File className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -273,25 +378,59 @@ export default function AdminContentPage() {
                               <span className="text-muted-foreground shrink-0">
                                 {TYPE_ICONS[c.content_type] ?? TYPE_ICONS.other}
                               </span>
-                              <span className="font-medium truncate">
-                                {c.title}
-                              </span>
+                              <div className="min-w-0">
+                                <div className="font-medium truncate">{c.title}</div>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                                  <span>{formatFileSize(c.file_size)}</span>
+                                  {c.folder_name && <span>• Folder: {c.folder_name}</span>}
+                                  {c.tags.length > 0 && <span>• {c.tags.length} tag{c.tags.length !== 1 ? "s" : ""}</span>}
+                                </div>
+                              </div>
                             </div>
                           </Table.Cell>
                           <Table.Cell>
                             <Badge variant="secondary">{c.content_type}</Badge>
                           </Table.Cell>
-                          <Table.Cell className="text-muted-foreground">
-                            {c.uploaded_by_name}
+                          <Table.Cell>
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm">{c.course_code || "No course"}</div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {c.course_name || c.uploaded_by_name}
+                                {c.semester_name ? ` • ${c.semester_name}` : ""}
+                              </div>
+                            </div>
                           </Table.Cell>
                           <Table.Cell>
-                            <Badge variant="outline">{c.visibility}</Badge>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge variant={getPublishState(c).variant}>{getPublishState(c).label}</Badge>
+                              <Badge variant="outline">{c.visibility}</Badge>
+                            </div>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                              <Badge variant="outline">{c.total_views ?? 0} views</Badge>
+                              <Badge variant="outline">{c.total_downloads ?? 0} downloads</Badge>
+                              <Badge variant="outline">{c.bookmark_count ?? 0} bookmarks</Badge>
+                              <Badge variant="outline">{c.comment_count ?? 0} comments</Badge>
+                              <Badge variant="outline">v{c.version_count ?? 0}</Badge>
+                            </div>
                           </Table.Cell>
                           <Table.Cell className="text-muted-foreground">
-                            {new Date(c.created_at).toLocaleDateString()}
+                            <div className="text-sm">{new Date(c.updated_at).toLocaleDateString()}</div>
+                            <div className="text-xs">Created {new Date(c.created_at).toLocaleDateString()}</div>
                           </Table.Cell>
                           <Table.Cell>
                             <div className="flex w-full items-center justify-start gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hidden sm:inline-flex h-8 w-8"
+                                  onClick={() => openDetail(c)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">View content details</span>
+                                </Button>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -325,6 +464,9 @@ export default function AdminContentPage() {
                                       <ExternalLink className="mr-2 h-4 w-4" /> Open Link
                                     </DropdownMenuItem>
                                   )}
+                                  <DropdownMenuItem onClick={() => openDetail(c)}>
+                                    <Eye className="mr-2 h-4 w-4" /> View Details
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => openEdit(c)}>
                                     <Pencil className="mr-2 h-4 w-4" /> Edit Details
                                   </DropdownMenuItem>
@@ -370,6 +512,10 @@ export default function AdminContentPage() {
                   Open Link
                 </ContextMenuItem>
               )}
+              <ContextMenuItem onClick={() => openDetail(ctxItem)}>
+                <Eye className="h-3.5 w-3.5 mr-2" />
+                View Details
+              </ContextMenuItem>
               <ContextMenuItem onClick={() => openEdit(ctxItem)}>
                 <Pencil className="h-3.5 w-3.5 mr-2" />
                 Edit Details
@@ -421,24 +567,134 @@ export default function AdminContentPage() {
                 rows={4}
               />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Content Type</Label>
+                <Select
+                  value={form.content_type}
+                  onValueChange={(v) =>
+                    setForm({ ...form, content_type: v as Content["content_type"] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="document">Document</SelectItem>
+                    <SelectItem value="video">Video</SelectItem>
+                    <SelectItem value="link">Link</SelectItem>
+                    <SelectItem value="image">Image</SelectItem>
+                    <SelectItem value="assignment">Assignment</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select
+                  value={form.visibility}
+                  onValueChange={(v) =>
+                    setForm({ ...form, visibility: v as Content["visibility"] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="department">Department</SelectItem>
+                    <SelectItem value="course">Course</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label>Visibility</Label>
-              <Select
-                value={form.visibility}
-                onValueChange={(v) =>
-                  setForm({ ...form, visibility: v as Content["visibility"] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="department">Department</SelectItem>
-                  <SelectItem value="course">Course</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>External Link</Label>
+              <Input
+                value={form.external_url}
+                onChange={(e) => setForm({ ...form, external_url: e.target.value })}
+                placeholder="https://example.com/resource"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Course Offering</Label>
+                <Select
+                  value={form.course_offering || "none"}
+                  onValueChange={(value) =>
+                    setForm({ ...form, course_offering: value === "none" ? "" : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No course</SelectItem>
+                    {offerings.map((offering) => (
+                      <SelectItem key={offering.id} value={offering.id}>
+                        {offering.course_code} • {offering.semester_name} • {offering.section}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Folder</Label>
+                <Select
+                  value={form.folder || "none"}
+                  onValueChange={(value) =>
+                    setForm({ ...form, folder: value === "none" ? "" : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No folder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No folder</SelectItem>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Publish Status</Label>
+                <Select
+                  value={form.is_published ? "published" : "draft"}
+                  onValueChange={(value) =>
+                    setForm({ ...form, is_published: value === "published" })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Publish At</Label>
+                <Input
+                  type="datetime-local"
+                  value={form.publish_at}
+                  onChange={(e) => setForm({ ...form, publish_at: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Expires At</Label>
+              <Input
+                type="datetime-local"
+                value={form.expires_at}
+                onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
+              />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={saving} className="w-full mt-4">
@@ -449,6 +705,15 @@ export default function AdminContentPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ContentDetailSheet
+        content={detailContent}
+        open={Boolean(detailContent)}
+        onOpenChange={(open) => {
+          if (!open) setDetailContent(null);
+        }}
+        mode="admin"
+      />
     </div>
   );
 }

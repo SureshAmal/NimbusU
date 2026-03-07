@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContentDetailSheet } from "@/components/application/content/content-detail-sheet";
 import { Table, TableCard } from "@/components/application/table/table";
 import { TablePaginationFooter, useClientPagination } from "@/components/application/table/table-pagination";
 import {
@@ -45,6 +46,25 @@ function isPreviewable(ext: string, contentType: string): "pdf" | "video" | "ima
 
 const DEBOUNCE_MS = 400;
 
+function formatFileSize(bytes?: number | null): string {
+    if (!bytes) return "—";
+    const units = ["B", "KB", "MB", "GB"];
+    let value = bytes;
+    let idx = 0;
+    while (value >= 1024 && idx < units.length - 1) {
+        value /= 1024;
+        idx += 1;
+    }
+    return `${value >= 10 || idx === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[idx]}`;
+}
+
+function getPublishState(content: Content) {
+    if (!content.is_published) return { label: "Draft", variant: "secondary" as const };
+    if (content.is_expired) return { label: "Expired", variant: "destructive" as const };
+    if (content.is_scheduled) return { label: "Scheduled", variant: "outline" as const };
+    return { label: "Published", variant: "default" as const };
+}
+
 export default function StudentContentPage() {
     const [items, setItems] = useState<Content[]>([]);
     const [initialLoading, setInitialLoading] = useState(true);
@@ -59,6 +79,7 @@ export default function StudentContentPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [textPreview, setTextPreview] = useState<string | null>(null);
     const [loadingPreview, setLoadingPreview] = useState(false);
+    const [detailContent, setDetailContent] = useState<Content | null>(null);
 
     const fetchItems = useCallback(async (opts?: { showLoading?: boolean; searchOverride?: string }) => {
         if (opts?.showLoading) setInitialLoading(true);
@@ -222,22 +243,62 @@ export default function StudentContentPage() {
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </Table.Head>
-                                            <Table.Head><span className="text-xs font-semibold whitespace-nowrap text-quaternary">Uploaded By</span></Table.Head>
-                                            <Table.Head><span className="text-xs font-semibold whitespace-nowrap text-quaternary">Date</span></Table.Head>
+                                            <Table.Head><span className="text-xs font-semibold whitespace-nowrap text-quaternary">Course</span></Table.Head>
+                                            <Table.Head><span className="text-xs font-semibold whitespace-nowrap text-quaternary">Tracking</span></Table.Head>
+                                            <Table.Head><span className="text-xs font-semibold whitespace-nowrap text-quaternary">Status</span></Table.Head>
+                                            <Table.Head><span className="text-xs font-semibold whitespace-nowrap text-quaternary">Updated</span></Table.Head>
                                             <Table.Head><span className="sr-only">Preview</span></Table.Head>
                                         </Table.Row>
                                     </Table.Header>
                                     <Table.Body>
-                                        {filteredItems.length === 0 ? <Table.Row id="empty"><Table.Cell colSpan={5} className="text-center py-8 text-muted-foreground">No content found.</Table.Cell></Table.Row> : paginatedItems.map((c) => (
+                                        {filteredItems.length === 0 ? <Table.Row id="empty"><Table.Cell colSpan={7} className="text-center py-8 text-muted-foreground">No content found.</Table.Cell></Table.Row> : paginatedItems.map((c) => (
                                             <Table.Row key={c.id} id={c.id} onContextMenu={() => setContextMenuContent(c)} className="cursor-pointer">
-                                                <Table.Cell className="font-medium flex items-center gap-2">{TYPE_ICONS[c.content_type]} {c.title}</Table.Cell>
-                                                <Table.Cell><Badge variant="secondary">{c.content_type}</Badge></Table.Cell>
-                                                <Table.Cell className="text-muted-foreground">{c.uploaded_by_name}</Table.Cell>
-                                                <Table.Cell className="text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</Table.Cell>
                                                 <Table.Cell>
-                                                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => c.external_url ? window.open(c.external_url, "_blank") : openPreview(c)} style={{ borderRadius: "var(--radius)" }}>
-                                                        <Eye className="h-3.5 w-3.5" /> View
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-muted-foreground shrink-0">{TYPE_ICONS[c.content_type]}</span>
+                                                        <div className="min-w-0">
+                                                            <div className="font-medium truncate">{c.title}</div>
+                                                            <div className="mt-0.5 text-xs text-muted-foreground">
+                                                                {formatFileSize(c.file_size)}
+                                                                {c.folder_name ? ` • ${c.folder_name}` : ""}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell><Badge variant="secondary">{c.content_type}</Badge></Table.Cell>
+                                                <Table.Cell>
+                                                    <div className="min-w-0">
+                                                        <div className="font-medium text-sm">{c.course_code || "General"}</div>
+                                                        <div className="text-xs text-muted-foreground truncate">{c.course_name || c.uploaded_by_name}{c.semester_name ? ` • ${c.semester_name}` : ""}</div>
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell>
+                                                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                                        <Badge variant="outline">{c.total_views ?? 0} views</Badge>
+                                                        <Badge variant="outline">{c.total_downloads ?? 0} downloads</Badge>
+                                                        <Badge variant="outline">{c.comment_count ?? 0} comments</Badge>
+                                                        <Badge variant="outline">v{c.version_count ?? 0}</Badge>
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell>
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        <Badge variant={getPublishState(c).variant}>{getPublishState(c).label}</Badge>
+                                                        <Badge variant="outline">{c.visibility}</Badge>
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell className="text-muted-foreground">
+                                                    <div className="text-sm">{new Date(c.updated_at).toLocaleDateString()}</div>
+                                                    <div className="text-xs">By {c.uploaded_by_name}</div>
+                                                </Table.Cell>
+                                                <Table.Cell>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setDetailContent(c)} style={{ borderRadius: "var(--radius)" }}>
+                                                            <Eye className="h-3.5 w-3.5" /> Details
+                                                        </Button>
+                                                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => c.external_url ? window.open(c.external_url, "_blank") : openPreview(c)} style={{ borderRadius: "var(--radius)" }}>
+                                                            <ExternalLink className="h-3.5 w-3.5" /> Open
+                                                        </Button>
+                                                    </div>
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}
@@ -260,6 +321,9 @@ export default function StudentContentPage() {
                 </ContextMenuTrigger>
                 {contextMenuContent && (
                     <ContextMenuContent className="w-48">
+                        <ContextMenuItem onClick={() => setDetailContent(contextMenuContent)}>
+                            <Eye className="mr-2 h-4 w-4" /> Details
+                        </ContextMenuItem>
                         <ContextMenuItem onClick={() => handleBookmark(contextMenuContent.id)}>
                             <Bookmark className="mr-2 h-4 w-4" /> Bookmark
                         </ContextMenuItem>
@@ -320,6 +384,17 @@ export default function StudentContentPage() {
                     </div>
                 );
             })()}
+
+            <ContentDetailSheet
+                content={detailContent}
+                open={Boolean(detailContent)}
+                onOpenChange={(open) => {
+                    if (!open) setDetailContent(null);
+                }}
+                mode="student"
+                onPreview={openPreview}
+                onBookmark={(content) => void handleBookmark(content.id)}
+            />
         </div>
     );
 }

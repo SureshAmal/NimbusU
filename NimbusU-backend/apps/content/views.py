@@ -1,6 +1,6 @@
 """Views for the content app."""
 
-from django.db.models import Q
+from django.db.models import Count, Q
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import generics, permissions, serializers, status
 from rest_framework.response import Response
@@ -52,7 +52,23 @@ class ContentListCreateView(generics.ListCreateAPIView):
     search_fields = ["title", "description"]
 
     def get_queryset(self):
-        return Content.objects.select_related("uploaded_by").prefetch_related("tags").all()
+        return (
+            Content.objects.select_related(
+                "uploaded_by",
+                "folder",
+                "course_offering__course",
+                "course_offering__semester",
+            )
+            .prefetch_related("tags")
+            .annotate(
+                version_count=Count("versions", distinct=True),
+                comment_count=Count("comments", distinct=True),
+                bookmark_count=Count("bookmarks", distinct=True),
+                total_views=Count("access_logs", filter=Q(access_logs__action="viewed"), distinct=True),
+                total_downloads=Count("access_logs", filter=Q(access_logs__action="downloaded"), distinct=True),
+            )
+            .all()
+        )
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -76,7 +92,12 @@ class ContentDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
 
     def get_queryset(self):
-        return Content.objects.select_related("uploaded_by").prefetch_related("tags").all()
+        return Content.objects.select_related(
+            "uploaded_by",
+            "folder",
+            "course_offering__course",
+            "course_offering__semester",
+        ).prefetch_related("tags").all()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

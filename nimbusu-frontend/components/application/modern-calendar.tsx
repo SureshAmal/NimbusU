@@ -53,6 +53,16 @@ interface CalendarProps {
 
 type ViewMode = "month" | "week" | "day";
 
+const DISPLAY_START_HOUR = 5;
+const DISPLAY_END_HOUR = 22;
+
+function formatHourLabel(hour: number) {
+    if (hour === 0) return "12 AM";
+    if (hour < 12) return `${hour} AM`;
+    if (hour === 12) return "12 PM";
+    return `${hour - 12} PM`;
+}
+
 export function ModernEventCalendar({
     events,
     onEventClick,
@@ -295,7 +305,10 @@ export function ModernEventCalendar({
             start: startDate,
             end: addDays(startDate, 6),
         });
-        const hours = Array.from({ length: 24 }, (_, i) => i);
+        const hours = Array.from(
+            { length: DISPLAY_END_HOUR - DISPLAY_START_HOUR },
+            (_, i) => i + DISPLAY_START_HOUR,
+        );
 
         const isCurrentWeek = days.some(day => isSameDay(day, currentTime));
 
@@ -338,13 +351,7 @@ export function ModernEventCalendar({
                                     className="h-24 relative border-b border-border last:border-b-0"
                                 >
                                     <span className="absolute -top-2.5 left-2 text-[10px] font-semibold text-muted-foreground bg-background/80 backdrop-blur-xs px-1 rounded">
-                                        {hour === 0
-                                            ? "12 AM"
-                                            : hour < 12
-                                                ? `${hour} AM`
-                                                : hour === 12
-                                                    ? "12 PM"
-                                                    : `${hour - 12} PM`}
+                                        {formatHourLabel(hour)}
                                     </span>
                                 </div>
                             ))}
@@ -356,7 +363,8 @@ export function ModernEventCalendar({
                             const isDayToday = isToday(day);
 
                             const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60;
-                            const currentTop = currentHour * 96;
+                            const currentTop = (currentHour - DISPLAY_START_HOUR) * 96;
+                            const showCurrentTimeLine = currentHour >= DISPLAY_START_HOUR && currentHour <= DISPLAY_END_HOUR;
 
                             return (
                                 <div
@@ -373,7 +381,7 @@ export function ModernEventCalendar({
                                     ))}
 
                                     {/* Current Time Indicator Line */}
-                                    {isDayToday && (
+                                    {isDayToday && showCurrentTimeLine && (
                                         <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{ top: `${currentTop}px`, transform: 'translateY(-50%)' }}>
                                             <div className="w-2 h-2 rounded-full bg-destructive ml-[-4px]" />
                                             <div className="h-[2px] bg-destructive flex-1 opacity-70" />
@@ -387,7 +395,7 @@ export function ModernEventCalendar({
                                         const endHour =
                                             event.end.getHours() + event.end.getMinutes() / 60;
                                         const duration = endHour - startHour;
-                                        const top = startHour * 96;
+                                        const top = (startHour - DISPLAY_START_HOUR) * 96;
                                         const height = duration * 96;
 
                                         return (
@@ -431,12 +439,16 @@ export function ModernEventCalendar({
 
     // ─── DAY VIEW ───────────────────────────────────────────────────────────────
     const renderDayView = () => {
-        const hours = Array.from({ length: 24 }, (_, i) => i);
+        const hours = Array.from(
+            { length: DISPLAY_END_HOUR - DISPLAY_START_HOUR },
+            (_, i) => i + DISPLAY_START_HOUR,
+        );
         const dayEvents = getEventsForDay(currentDate);
         const isDayToday = isToday(currentDate);
 
         const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60;
-        const currentTop = currentHour * 112;
+        const currentTop = (currentHour - DISPLAY_START_HOUR) * 112;
+        const showCurrentTimeLine = currentHour >= DISPLAY_START_HOUR && currentHour <= DISPLAY_END_HOUR;
 
         return (
             <div className="flex flex-col h-full bg-background rounded-[var(--radius)] border border-border overflow-hidden shadow-sm">
@@ -467,13 +479,7 @@ export function ModernEventCalendar({
                                     className="h-28 relative border-b border-border last:border-b-0"
                                 >
                                     <span className="absolute -top-2.5 right-3 text-[13px] font-semibold text-muted-foreground bg-background/80 backdrop-blur-xs px-1 rounded">
-                                        {hour === 0
-                                            ? "12 AM"
-                                            : hour < 12
-                                                ? `${hour} AM`
-                                                : hour === 12
-                                                    ? "12 PM"
-                                                    : `${hour - 12} PM`}
+                                        {formatHourLabel(hour)}
                                     </span>
                                 </div>
                             ))}
@@ -490,7 +496,7 @@ export function ModernEventCalendar({
                             ))}
 
                             {/* Current Time Indicator Line */}
-                            {isDayToday && (
+                            {isDayToday && showCurrentTimeLine && (
                                 <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{ top: `${currentTop}px`, transform: 'translateY(-50%)' }}>
                                     <div className="w-2.5 h-2.5 rounded-full bg-destructive ml-[-5px]" />
                                     <div className="h-[2px] bg-destructive flex-1 opacity-70" />
@@ -504,7 +510,7 @@ export function ModernEventCalendar({
                                 const endHour =
                                     event.end.getHours() + event.end.getMinutes() / 60;
                                 const duration = endHour - startHour;
-                                const top = startHour * 112;
+                                const top = (startHour - DISPLAY_START_HOUR) * 112;
                                 const height = duration * 112;
 
                                 return (

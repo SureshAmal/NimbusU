@@ -13,6 +13,9 @@ urlpatterns = [
     # Timetable entries
     path("timetable/", views.TimetableListCreateView.as_view(), name="timetable-list-create"),
     path("timetable/me/", views.MyTimetableView.as_view(), name="my-timetable"),
+    path("timetable/import-csv/", views.TimetableImportCsvView.as_view(), name="timetable-import-csv"),
+    path("timetable/export-csv/", views.TimetableExportCsvView.as_view(), name="timetable-export-csv"),
+    path("timetable/batch-delete/", views.TimetableBatchDeleteView.as_view(), name="timetable-batch-delete"),
     path("timetable/conflicts/", views.TimetableConflictsView.as_view(), name="timetable-conflicts"),
     path("timetable/<uuid:pk>/", views.TimetableDetailView.as_view(), name="timetable-detail"),
     # Swap requests

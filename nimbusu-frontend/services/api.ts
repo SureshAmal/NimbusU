@@ -342,7 +342,16 @@ export const timetableService = {
     update: (id: string, data: Partial<TimetableEntry>) =>
         api.patch<TimetableEntry>(`/timetable/${id}/`, data),
     delete: (id: string) => api.delete(`/timetable/${id}/`),
-    mine: () => api.get<TimetableEntry[]>("/timetable/me/"),
+    mine: (params?: Record<string, string>) =>
+        api.get<TimetableEntry[]>("/timetable/me/", { params }),
+    importCsv: (data: FormData) =>
+        api.post("/timetable/import-csv/", data, {
+            headers: { "Content-Type": "multipart/form-data" },
+        }),
+    exportCsv: (params?: Record<string, string>) =>
+        api.get<Blob>("/timetable/export-csv/", { params, responseType: "blob" }),
+    deleteBatch: (data: { batch: string; semester?: string; course_offering?: string }) =>
+        api.post("/timetable/batch-delete/", data),
     conflicts: () => api.get("/timetable/conflicts/"),
     rooms: {
         list: (params?: Record<string, string>) =>

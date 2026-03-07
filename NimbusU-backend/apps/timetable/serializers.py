@@ -34,6 +34,7 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
         source="course_offering.course.department.name", read_only=True, default=None
     )
     program_name = serializers.SerializerMethodField()
+    division = serializers.CharField(source="course_offering.section", read_only=True)
 
     class Meta:
         model = TimetableEntry
@@ -42,6 +43,7 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
             "faculty_name", "batch", "subject_type", "subject_type_display",
             "location", "day_of_week", "day_name", "start_time", "end_time",
             "semester", "semester_name", "department_name", "program_name",
+            "division",
             "is_active", "is_oneoff", "oneoff_date",
         ]
         read_only_fields = ["id"]
@@ -51,6 +53,12 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
         if department and department.programs.exists():
             return department.programs.first().name
         return None
+
+
+class TimetableBatchDeleteSerializer(serializers.Serializer):
+    batch = serializers.CharField()
+    semester = serializers.UUIDField(required=False)
+    course_offering = serializers.UUIDField(required=False)
 
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):

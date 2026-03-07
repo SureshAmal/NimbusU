@@ -1,0 +1,8 @@
+course_code,academic_year,semester_name,section,batch,subject_type,location,day_of_week,start_time,end_time,is_active,is_oneoff,oneoff_date,course_offering_id,semester_id
+CS101,2025-2026,Odd Semester,A,A1,classroom,Room 101,0,09:00:00,10:00:00,true,false,,optional-exported-uuid,optional-exported-semester-uuid
+CS101,2025-2026,Odd Semester,A,A1,lab,Lab B1,2,13:00:00,15:00:00,true,false,,optional-exported-uuid,optional-exported-semester-uuid
+CS101,2025-2026,Odd Semester,A,A1,tutorial,Tutorial Hall 2,4,11:00:00,12:00:00,true,false,,optional-exported-uuid,optional-exported-semester-uuid
+CS201,2025-2026,Odd Semester,A,A2,classroom,Room 203,1,10:00:00,11:00:00,true,false,,optional-exported-uuid,optional-exported-semester-uuid
+CS201,2025-2026,Odd Semester,A,A2,classroom,Room 203,3,14:00:00,15:00:00,true,false,,optional-exported-uuid,optional-exported-semester-uuid
+MA101,2025-2026,Odd Semester,B,B1,classroom,Seminar Hall,5,08:00:00,09:00:00,true,false,,optional-exported-uuid,optional-exported-semester-uuid
+MA101,2025-2026,Odd Semester,B,B1,classroom,Room 305,0,18:00:00,19:00:00,true,true,2026-03-20,optional-exported-uuid,optional-exported-semester-uuid

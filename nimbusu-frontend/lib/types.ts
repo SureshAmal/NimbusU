@@ -229,20 +229,33 @@ export interface Content {
     id: string;
     title: string;
     description: string;
-    content_type: "document" | "video" | "link" | "image" | "other";
+    content_type: "document" | "video" | "link" | "image" | "other" | "assignment";
     file: string | null;
     file_size: number | null;
     mime_type: string | null;
     external_url: string | null;
     folder: string | null;
+    folder_name?: string | null;
     course_offering: string | null;
+    course_name?: string | null;
+    course_code?: string | null;
+    semester_name?: string | null;
     uploaded_by: string;
     uploaded_by_name: string;
     visibility: "public" | "department" | "course" | "private";
     is_published: boolean;
+    publish_at?: string | null;
+    expires_at?: string | null;
+    is_expired?: boolean;
+    is_scheduled?: boolean;
     is_deleted?: boolean;
     deleted_at?: string | null;
     tags: ContentTag[];
+    version_count?: number;
+    comment_count?: number;
+    bookmark_count?: number;
+    total_views?: number;
+    total_downloads?: number;
     created_at: string;
     updated_at: string;
 }
@@ -400,6 +413,12 @@ export interface ContentVersion {
     uploaded_by: string;
     uploaded_by_name: string;
     created_at: string;
+}
+
+export interface ContentStats {
+    total_views: number;
+    total_downloads: number;
+    bookmarks: number;
 }
 
 export interface ContentComment {

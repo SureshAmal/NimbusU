@@ -1,5 +1,6 @@
 """Serializers for the content app."""
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import Bookmark, Content, ContentAccessLog, ContentComment, ContentFolder, ContentTag, ContentVersion
@@ -32,16 +33,37 @@ class ContentListSerializer(serializers.ModelSerializer):
     uploaded_by_name = serializers.CharField(
         source="uploaded_by.full_name", read_only=True
     )
+    folder_name = serializers.CharField(source="folder.name", read_only=True, default=None)
+    course_name = serializers.CharField(source="course_offering.course.name", read_only=True, default=None)
+    course_code = serializers.CharField(source="course_offering.course.code", read_only=True, default=None)
+    semester_name = serializers.CharField(source="course_offering.semester.name", read_only=True, default=None)
     tags = ContentTagSerializer(many=True, read_only=True)
+    version_count = serializers.IntegerField(read_only=True)
+    comment_count = serializers.IntegerField(read_only=True)
+    bookmark_count = serializers.IntegerField(read_only=True)
+    total_views = serializers.IntegerField(read_only=True)
+    total_downloads = serializers.IntegerField(read_only=True)
+    is_expired = serializers.SerializerMethodField()
+    is_scheduled = serializers.SerializerMethodField()
 
     class Meta:
         model = Content
         fields = [
             "id", "title", "content_type", "file_size", "mime_type",
             "uploaded_by", "uploaded_by_name", "course_offering",
-            "visibility", "is_published", "tags", "created_at",
+            "course_name", "course_code", "semester_name", "folder", "folder_name",
+            "visibility", "is_published", "publish_at", "expires_at",
+            "tags", "version_count", "comment_count", "bookmark_count",
+            "total_views", "total_downloads", "is_expired", "is_scheduled",
+            "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+    def get_is_expired(self, obj) -> bool:
+        return bool(obj.expires_at and obj.expires_at <= timezone.now())
+
+    def get_is_scheduled(self, obj) -> bool:
+        return bool(obj.publish_at and obj.publish_at > timezone.now())
 
 
 class ContentDetailSerializer(serializers.ModelSerializer):
