@@ -1,4 +1,4 @@
-openapi: 3.0.3
+uv run python ../generate_api_md.py schema.yaml ../docs/API.mdopenapi: 3.0.3
 info:
   title: NimbusU API
   version: 1.0.0

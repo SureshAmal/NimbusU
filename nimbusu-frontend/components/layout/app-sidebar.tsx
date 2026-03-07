@@ -65,9 +65,11 @@ const facultyNav = [
     { title: "Dashboard", url: "/faculty/dashboard", icon: LayoutDashboard },
     { title: "My Courses", url: "/faculty/courses", icon: BookOpen },
     { title: "Timetable", url: "/faculty/timetable", icon: Calendar },
+    { title: "Attendance", url: "/faculty/attendance", icon: ScrollText },
     { title: "Room Bookings", url: "/faculty/room-bookings", icon: Building },
     { title: "Messages", url: "/faculty/messages", icon: Mail },
     { title: "Announcements", url: "/faculty/announcements", icon: Bell },
+    { title: "Library", url: "/student/library", icon: BookMarked },
 ];
 
 const studentNav = [
@@ -80,6 +82,7 @@ const studentNav = [
     { title: "Attendance", url: "/student/attendance", icon: ScrollText },
     { title: "Messages", url: "/student/messages", icon: Mail },
     { title: "Notifications", url: "/student/notifications", icon: Bell },
+    { title: "Library", url: "/student/library", icon: BookMarked },
 ];
 
 function getNavItems(role?: string) {

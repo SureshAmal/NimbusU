@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Search, Loader2, BookOpen, FileText, User as UserIcon } from "lucide-react";
+import { Search, Loader2, BookOpen, FileText, User as UserIcon, ClipboardList, Bell, MessageSquare } from "lucide-react";
 import {
     CommandDialog,
     CommandEmpty,
@@ -18,7 +18,7 @@ export function GlobalSearch() {
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
     const [loading, setLoading] = React.useState(false);
-    const [results, setResults] = React.useState<{ courses: any[]; content: any[]; users: any[] } | null>(null);
+    const [results, setResults] = React.useState<{ courses: any[]; content: any[]; users: any[]; assignments: any[]; announcements: any[]; forums: any[] } | null>(null);
     const router = useRouter();
 
     React.useEffect(() => {
@@ -53,7 +53,7 @@ export function GlobalSearch() {
                 if (res.data?.status === "success" && res.data?.data) {
                     setResults(res.data.data);
                 } else {
-                    setResults({ courses: [], content: [], users: [] });
+                    setResults({ courses: [], content: [], users: [], assignments: [], announcements: [], forums: [] });
                 }
             } catch {
                 // Handle error silently
@@ -154,6 +154,64 @@ export function GlobalSearch() {
                                             <div className="flex flex-col">
                                                 <span>{u.title}</span>
                                                 <span className="text-xs text-muted-foreground">{u.subtitle}</span>
+                                            </div>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            )}
+
+                            {results.users.length > 0 && (results.assignments.length > 0 || results.announcements.length > 0 || results.forums.length > 0) && <CommandSeparator />}
+
+                            {results.assignments.length > 0 && (
+                                <CommandGroup heading="Assignments">
+                                    {results.assignments.map((a) => (
+                                        <CommandItem
+                                            key={a.id}
+                                            value={a.id}
+                                            onSelect={() => runCommand(() => router.push(a.link))}
+                                        >
+                                            <ClipboardList className="mr-2 h-4 w-4 text-orange-500" />
+                                            <div className="flex flex-col">
+                                                <span>{a.title}</span>
+                                                <span className="text-xs text-muted-foreground">{a.subtitle}</span>
+                                            </div>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            )}
+                            {results.assignments.length > 0 && (results.announcements.length > 0 || results.forums.length > 0) && <CommandSeparator />}
+
+                            {results.announcements.length > 0 && (
+                                <CommandGroup heading="Announcements">
+                                    {results.announcements.map((a) => (
+                                        <CommandItem
+                                            key={a.id}
+                                            value={a.id}
+                                            onSelect={() => runCommand(() => router.push(a.link))}
+                                        >
+                                            <Bell className="mr-2 h-4 w-4 text-yellow-500" />
+                                            <div className="flex flex-col">
+                                                <span>{a.title}</span>
+                                                <span className="text-xs text-muted-foreground">{a.subtitle}</span>
+                                            </div>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            )}
+                            {results.announcements.length > 0 && results.forums.length > 0 && <CommandSeparator />}
+
+                            {results.forums.length > 0 && (
+                                <CommandGroup heading="Forums">
+                                    {results.forums.map((f) => (
+                                        <CommandItem
+                                            key={f.id}
+                                            value={f.id}
+                                            onSelect={() => runCommand(() => router.push(f.link))}
+                                        >
+                                            <MessageSquare className="mr-2 h-4 w-4 text-purple-500" />
+                                            <div className="flex flex-col">
+                                                <span>{f.title}</span>
+                                                <span className="text-xs text-muted-foreground">{f.subtitle}</span>
                                             </div>
                                         </CommandItem>
                                     ))}

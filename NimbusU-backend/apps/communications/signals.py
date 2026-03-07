@@ -2,6 +2,8 @@ import logging
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from channels.layers import get_channel_layer  # type: ignore
+from asgiref.sync import async_to_sync  # type: ignore
 
 from apps.assignments.models import Assignment, Submission
 from apps.timetable.models import AttendanceRecord
@@ -11,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_notification(user, title, message, notif_type, ref_type=None, ref_id=None):
-    """Helper to create a unified notification."""
-    Notification.objects.create(
+    """Helper to create a unified notification and broadcast it via WebSocket."""
+    notif = Notification.objects.create(
         user=user,
         title=title,
         message=message,
@@ -21,6 +23,24 @@ def create_notification(user, title, message, notif_type, ref_type=None, ref_id=
         reference_id=ref_id,
         channel=Notification.Channel.IN_APP,
     )
+    # Push live to the user's notification WebSocket channel
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"notification_{user.id}",
+            {
+                "type": "notification_message",
+                "message": {
+                    "id": str(notif.id),
+                    "title": notif.title,
+                    "message": notif.message,
+                    "notification_type": notif.notification_type,
+                    "created_at": notif.created_at.isoformat(),
+                },
+            },
+        )
+    except Exception as e:
+        logger.warning(f"Failed to broadcast notification via WebSocket: {e}")
 
 
 @receiver(post_save, sender=Assignment)

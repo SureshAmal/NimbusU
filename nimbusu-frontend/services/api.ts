@@ -35,9 +35,12 @@ import type {
     RubricCriteria,
     AssignmentGroup,
     SiteSettings,
+    StudentTask,
+    DiscussionForum,
+    DiscussionPost,
 } from "@/lib/types";
 
-/* ─── Users ───────────────────────────────────────────────────────── */
+/* ─── Auth ────────────────────────────────────────────────────────── */
 
 export const usersService = {
     list: (params?: Record<string, string>) =>
@@ -166,7 +169,18 @@ export const gradesService = {
     me: () => api.get<Grade[]>("/academics/grades/me/"),
     gpa: (params?: Record<string, string>) =>
         api.get<{ status: string; data: any }>("/academics/grades/gpa/", { params }),
-    export: () => api.get<Blob>("/academics/grades/export/", { responseType: "blob" }),
+    export: (params?: Record<string, string>) =>
+        api.get<Blob>("/academics/grades/export/", { params, responseType: "blob" }),
+};
+
+export const studentTasksService = {
+    list: (params?: Record<string, string>) =>
+        api.get<PaginatedResponse<StudentTask>>("/academics/tasks/", { params }),
+    create: (data: Partial<StudentTask>) =>
+        api.post<StudentTask>("/academics/tasks/", data),
+    update: (id: string, data: Partial<StudentTask>) =>
+        api.patch<StudentTask>(`/academics/tasks/${id}/`, data),
+    delete: (id: string) => api.delete(`/academics/tasks/${id}/`),
 };
 
 /* ─── Assignments ─────────────────────────────────────────────────── */
@@ -331,7 +345,7 @@ export const roomBookingsService = {
         api.patch<RoomBooking>(`/room-bookings/${id}/`, data),
     delete: (id: string) => api.delete(`/room-bookings/${id}/`),
     approve: (id: string, data: { status: "approved" | "rejected" }) =>
-        api.post(`/room-bookings/${id}/approve/`, data),
+        api.patch(`/room-bookings/${id}/approve/`, data),
 };
 
 export const substituteFacultyService = {
@@ -370,16 +384,19 @@ export const messagesService = {
 
 export const forumsService = {
     list: (params?: Record<string, string>) =>
-        api.get("/communications/forums/", { params }),
-    get: (id: string) => api.get(`/communications/forums/${id}/`),
+        api.get<PaginatedResponse<DiscussionForum>>("/communications/forums/", { params }),
+    get: (id: string) =>
+        api.get<DiscussionForum & { posts: DiscussionPost[] }>(`/communications/forums/${id}/`),
     create: (data: { title: string; course_offering: string }) =>
-        api.post("/communications/forums/", data),
+        api.post<DiscussionForum>("/communications/forums/", data),
     createPost: (forumId: string, data: { body: string; parent?: string }) =>
-        api.post(`/communications/forums/${forumId}/posts/`, data),
-    updatePost: (forumId: string, id: string, data: { body: string }) =>
-        api.patch(`/communications/forums/${forumId}/posts/${id}/`, data),
-    deletePost: (forumId: string, id: string) =>
-        api.delete(`/communications/forums/${forumId}/posts/${id}/delete/`),
+        api.post<DiscussionPost>(`/communications/forums/${forumId}/posts/`, data),
+    updatePost: (forumId: string, postId: string, data: { body?: string; is_resolved?: boolean }) =>
+        api.patch<DiscussionPost>(`/communications/forums/${forumId}/posts/${postId}/`, data),
+    deletePost: (forumId: string, postId: string) =>
+        api.delete(`/communications/forums/${forumId}/posts/${postId}/delete/`),
+    replies: (postId: string) =>
+        api.get<PaginatedResponse<DiscussionPost>>(`/communications/posts/${postId}/replies/`),
 };
 
 /* ─── Notifications ───────────────────────────────────────────────── */
@@ -488,6 +505,7 @@ export const swapRequestsService = {
     respond: (id: string, action: "approve" | "reject") =>
         api.post(`/timetable/swap-requests/${id}/respond/`, { action }),
 };
+
 
 /* ─── Root ────────────────────────────────────────────────────────── */
 

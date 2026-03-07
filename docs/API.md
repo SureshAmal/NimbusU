@@ -1,1794 +1,6910 @@
 # NimbusU API Documentation
 
-**Version:** 1.0  
-**Base URL:** `/api/v1/`  
-**Authentication:** JWT Bearer Token
+Version: 1.0.0
 
-## Table of Contents
+University Content Management System — REST API
 
-1. [Authentication](#authentication)
-2. [Users & Accounts](#users--accounts)
-3. [Academics](#academics)
-4. [Assignments](#assignments)
-5. [Content Management](#content-management)
-6. [Timetable & Attendance](#timetable--attendance)
-7. [Communications](#communications)
-8. [Common Response Formats](#common-response-formats)
+# Academics APIs
 
----
+## `GET /api/v1/academics/courses/`
 
-## Academics
+**Summary**: academics_courses_list
 
-### academics_courses_list
-**GET** `/api/v1/academics/courses/`
+#### Parameters
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| department | query | No | string |  |
-| is_active | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `department` | `query` | `string (uuid)` | No |  |
+| `is_active` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
 
-**Responses:**
-- **200**: 
+#### Response: 200 
 
----
+#### Response Payload
 
-### academics_courses_create
-**POST** `/api/v1/academics/courses/`
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Course` | Yes |  |
 
-**Responses:**
-- **201**: 
-
----
-
-### academics_courses_retrieve
-**GET** `/api/v1/academics/courses/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "code": "string",
+      "department": "123e4567-e89b-12d3-a456-426614174000",
+      "department_name": "string",
+      "credits": 0,
+      "description": "string",
+      "is_active": true
+    }
+  ]
+}
+```
 
 ---
 
-### academics_courses_update
-**PUT** `/api/v1/academics/courses/{id}/`
+## `POST /api/v1/academics/courses/`
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+**Summary**: academics_courses_create
 
-**Responses:**
-- **200**: 
+#### Request Payload
 
----
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `credits` | `integer` | Yes |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
-### academics_courses_partial_update
-**PATCH** `/api/v1/academics/courses/{id}/`
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Response: 201 
 
-**Responses:**
-- **200**: 
+#### Response Payload
 
----
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `credits` | `integer` | Yes |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
-### academics_courses_destroy
-**DELETE** `/api/v1/academics/courses/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### academics_enrollments_create
-**POST** `/api/v1/academics/enrollments/`
-
-**Responses:**
-- **201**: 
-
----
-
-### academics_enrollments_destroy
-**DELETE** `/api/v1/academics/enrollments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
 ---
 
-### academics_enrollments_me_list
-**GET** `/api/v1/academics/enrollments/me/`
+## `GET /api/v1/academics/courses/{id}/`
 
-GET /api/v1/academics/enrollments/me/
+**Summary**: academics_courses_retrieve
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
----
+#### Response: 200 
 
-### academics_offerings_list
-**GET** `/api/v1/academics/offerings/`
+#### Response Payload
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| course | query | No | string |  |
-| faculty | query | No | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-| semester | query | No | string |  |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `credits` | `integer` | Yes |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
-**Responses:**
-- **200**: 
-
----
-
-### academics_offerings_create
-**POST** `/api/v1/academics/offerings/`
-
-**Responses:**
-- **201**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
 ---
 
-### academics_offerings_retrieve
-**GET** `/api/v1/academics/offerings/{id}/`
+## `PUT /api/v1/academics/courses/{id}/`
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+**Summary**: academics_courses_update
 
-**Responses:**
-- **200**: 
+#### Parameters
 
----
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
-### academics_offerings_update
-**PUT** `/api/v1/academics/offerings/{id}/`
+#### Request Payload
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `credits` | `integer` | Yes |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
-**Responses:**
-- **200**: 
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
----
+#### Response: 200 
 
-### academics_offerings_partial_update
-**PATCH** `/api/v1/academics/offerings/{id}/`
+#### Response Payload
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `credits` | `integer` | Yes |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
-**Responses:**
-- **200**: 
-
----
-
-### academics_offerings_students_list
-**GET** `/api/v1/academics/offerings/{id}/students/`
-
-GET /api/v1/academics/offerings/{id}/students/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### academics_programs_list
-**GET** `/api/v1/academics/programs/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| degree_type | query | No | string | * `UG` - Undergraduate * `PG` - Postgraduate * `PhD` - Doctorate * `Diploma` - Diploma |
-| department | query | No | string |  |
-| is_active | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
 ---
 
-### academics_programs_create
-**POST** `/api/v1/academics/programs/`
+## `PATCH /api/v1/academics/courses/{id}/`
 
-**Responses:**
-- **201**: 
+**Summary**: academics_courses_partial_update
 
----
+#### Parameters
 
-### academics_programs_retrieve
-**GET** `/api/v1/academics/programs/{id}/`
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Request Payload
 
-**Responses:**
-- **200**: 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `code` | `string` | No |  |
+| `department` | `string` | No |  |
+| `credits` | `integer` | No |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
----
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
-### academics_programs_update
-**PUT** `/api/v1/academics/programs/{id}/`
+#### Response: 200 
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Response Payload
 
-**Responses:**
-- **200**: 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `credits` | `integer` | Yes |  |
+| `description` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
 
----
-
-### academics_programs_partial_update
-**PATCH** `/api/v1/academics/programs/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### academics_programs_destroy
-**DELETE** `/api/v1/academics/programs/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### academics_schools_list
-**GET** `/api/v1/academics/schools/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "credits": 0,
+  "description": "string",
+  "is_active": true
+}
+```
 
 ---
 
-### academics_schools_create
-**POST** `/api/v1/academics/schools/`
+## `DELETE /api/v1/academics/courses/{id}/`
 
-**Responses:**
-- **201**: 
+**Summary**: academics_courses_destroy
 
----
+#### Parameters
 
-### academics_schools_retrieve
-**GET** `/api/v1/academics/schools/{id}/`
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
+#### Response: 204 No response body
 
 ---
 
-### academics_schools_update
-**PUT** `/api/v1/academics/schools/{id}/`
+## `POST /api/v1/academics/enrollments/`
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+**Summary**: academics_enrollments_create
 
-**Responses:**
-- **200**: 
+#### Request Payload
 
----
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `student` | `string` | Yes |  |
+| `course_offering` | `string` | Yes |  |
+| `status` | `EnrollmentStatusEnum` | No |  |
 
-### academics_schools_partial_update
-**PATCH** `/api/v1/academics/schools/{id}/`
+**Example Request**:
+```json
+{
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "status": "active"
+}
+```
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Response: 201 
 
-**Responses:**
-- **200**: 
+#### Response Payload
 
----
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `student` | `string` | Yes |  |
+| `student_name` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `enrolled_at` | `string` | Yes |  (read-only) |
+| `status` | `EnrollmentStatusEnum` | No |  |
 
-### academics_schools_destroy
-**DELETE** `/api/v1/academics/schools/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### academics_semesters_list
-**GET** `/api/v1/academics/semesters/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "student_name": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "enrolled_at": "2023-10-23T12:00:00Z",
+  "status": "active"
+}
+```
 
 ---
 
-### academics_semesters_create
-**POST** `/api/v1/academics/semesters/`
+## `DELETE /api/v1/academics/enrollments/{id}/`
 
-**Responses:**
-- **201**: 
+**Summary**: academics_enrollments_destroy
 
----
+#### Parameters
 
-### academics_semesters_retrieve
-**GET** `/api/v1/academics/semesters/{id}/`
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
+#### Response: 204 No response body
 
 ---
 
-### academics_semesters_update
-**PUT** `/api/v1/academics/semesters/{id}/`
+## `GET /api/v1/academics/enrollments/me/`
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+**Summary**: GET /api/v1/academics/enrollments/me/
 
-**Responses:**
-- **200**: 
+#### Parameters
 
----
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
 
-### academics_semesters_partial_update
-**PATCH** `/api/v1/academics/semesters/{id}/`
+#### Response: 200 
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Response Payload
 
-**Responses:**
-- **200**: 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Enrollment` | Yes |  |
 
----
-
-### academics_semesters_current_retrieve
-**GET** `/api/v1/academics/semesters/current/`
-
-GET /api/v1/academics/semesters/current/
-
-**Responses:**
-- **200**: 
-
----
-
-## Admin
-
-### admin_audit_logs_list
-**GET** `/api/v1/admin/audit-logs/`
-
-GET /api/v1/admin/audit-logs/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| action | query | No | string |  |
-| entity_type | query | No | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| user | query | No | string |  |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "student": "123e4567-e89b-12d3-a456-426614174000",
+      "student_name": "string",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "course_name": "string",
+      "enrolled_at": "2023-10-23T12:00:00Z",
+      "status": "active"
+    }
+  ]
+}
+```
 
 ---
 
-## Assignments
+## `GET /api/v1/academics/offerings/`
 
-### assignments_list
-**GET** `/api/v1/assignments/`
+**Summary**: academics_offerings_list
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| assignment_type | query | No | string | * `assignment` - Assignment * `quiz` - Quiz * `exam` - Exam * `project` - Project |
-| course_offering | query | No | string |  |
-| is_published | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `course` | `query` | `string (uuid)` | No |  |
+| `faculty` | `query` | `string (uuid)` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+| `semester` | `query` | `string (uuid)` | No |  |
 
----
+#### Response: 200 
 
-### assignments_create
-**POST** `/api/v1/assignments/`
+#### Response Payload
 
-**Responses:**
-- **201**: 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of CourseOffering` | Yes |  |
 
----
-
-### assignments_retrieve
-**GET** `/api/v1/assignments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### assignments_update
-**PUT** `/api/v1/assignments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "course": "123e4567-e89b-12d3-a456-426614174000",
+      "course_name": "string",
+      "course_code": "string",
+      "semester": "123e4567-e89b-12d3-a456-426614174000",
+      "semester_name": "string",
+      "faculty": "123e4567-e89b-12d3-a456-426614174000",
+      "faculty_name": "string",
+      "section": "string",
+      "max_students": 0,
+      "enrolled_count": 0
+    }
+  ]
+}
+```
 
 ---
 
-### assignments_partial_update
-**PATCH** `/api/v1/assignments/{id}/`
+## `POST /api/v1/academics/offerings/`
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+**Summary**: academics_offerings_create
 
-**Responses:**
-- **200**: 
+#### Request Payload
 
----
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `course` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `faculty` | `string` | Yes |  |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
 
-### assignments_destroy
-**DELETE** `/api/v1/assignments/{id}/`
+**Example Request**:
+```json
+{
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "section": "string",
+  "max_students": 0
+}
+```
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Response: 201 
 
-**Responses:**
-- **204**: No response body
+#### Response Payload
 
----
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `semester` | `string` | Yes |  |
+| `semester_name` | `string` | Yes |  (read-only) |
+| `faculty` | `string` | Yes |  |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
+| `enrolled_count` | `integer` | Yes |  (read-only) |
 
-### assignments_submissions_list
-**GET** `/api/v1/assignments/{id}/submissions/`
-
-GET /api/v1/assignments/{id}/submissions/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### assignments_submissions_grade_partial_update
-**PATCH** `/api/v1/assignments/{id}/submissions/{sub_id}/grade/`
-
-PATCH /api/v1/assignments/{pk}/submissions/{sub_id}/grade/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-| sub_id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### assignments_submissions_me_retrieve
-**GET** `/api/v1/assignments/{id}/submissions/me/`
-
-GET /api/v1/assignments/{id}/submissions/me/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "semester_name": "string",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty_name": "string",
+  "section": "string",
+  "max_students": 0,
+  "enrolled_count": 0
+}
+```
 
 ---
 
-### assignments_submit_create
-**POST** `/api/v1/assignments/{id}/submit/`
+## `GET /api/v1/academics/offerings/{id}/`
 
-POST /api/v1/assignments/{id}/submit/
+**Summary**: academics_offerings_retrieve
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Parameters
 
-**Responses:**
-- **201**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
----
+#### Response: 200 
 
-### assignments_export_retrieve
-**GET** `/api/v1/assignments/export/{offering_id}/`
+#### Response Payload
 
-GET /api/v1/assignments/export/{offering_id}/ — CSV export.
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `semester` | `string` | Yes |  |
+| `semester_name` | `string` | Yes |  (read-only) |
+| `faculty` | `string` | Yes |  |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
+| `enrolled_count` | `integer` | Yes |  (read-only) |
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| offering_id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-## Attendance
-
-### attendance_update
-**PUT** `/api/v1/attendance/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### attendance_partial_update
-**PATCH** `/api/v1/attendance/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "semester_name": "string",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty_name": "string",
+  "section": "string",
+  "max_students": 0,
+  "enrolled_count": 0
+}
+```
 
 ---
 
-### attendance_course_list
-**GET** `/api/v1/attendance/course/{offering_id}/`
+## `PUT /api/v1/academics/offerings/{id}/`
 
-GET /api/v1/attendance/course/{offering_id}/
+**Summary**: academics_offerings_update
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| offering_id | path | Yes | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `course` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `faculty` | `string` | Yes |  |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
+
+**Example Request**:
+```json
+{
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "section": "string",
+  "max_students": 0
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `semester` | `string` | Yes |  |
+| `semester_name` | `string` | Yes |  (read-only) |
+| `faculty` | `string` | Yes |  |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
+| `enrolled_count` | `integer` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "semester_name": "string",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty_name": "string",
+  "section": "string",
+  "max_students": 0,
+  "enrolled_count": 0
+}
+```
 
 ---
 
-### attendance_mark_create
-**POST** `/api/v1/attendance/mark/`
+## `PATCH /api/v1/academics/offerings/{id}/`
 
-POST /api/v1/attendance/mark/ — Mark attendance in bulk.
+**Summary**: academics_offerings_partial_update
 
-**Responses:**
-- **201**: 
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `course` | `string` | No |  |
+| `semester` | `string` | No |  |
+| `faculty` | `string` | No |  |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
+
+**Example Request**:
+```json
+{
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "section": "string",
+  "max_students": 0
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `semester` | `string` | Yes |  |
+| `semester_name` | `string` | Yes |  (read-only) |
+| `faculty` | `string` | Yes |  |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `section` | `string` | No |  |
+| `max_students` | `integer` | No |  |
+| `enrolled_count` | `integer` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "semester_name": "string",
+  "faculty": "123e4567-e89b-12d3-a456-426614174000",
+  "faculty_name": "string",
+  "section": "string",
+  "max_students": 0,
+  "enrolled_count": 0
+}
+```
 
 ---
 
-### attendance_me_list
-**GET** `/api/v1/attendance/me/`
+## `GET /api/v1/academics/offerings/{id}/students/`
 
-GET /api/v1/attendance/me/
+**Summary**: GET /api/v1/academics/offerings/{id}/students/
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of UserList` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "email": "user@example.com",
+      "first_name": "string",
+      "last_name": "string",
+      "role": "admin",
+      "department": "123e4567-e89b-12d3-a456-426614174000",
+      "department_name": "string",
+      "phone": "string",
+      "is_active": true,
+      "last_login": "2023-10-23T12:00:00Z",
+      "created_at": "2023-10-23T12:00:00Z",
+      "student_profile": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "student_id_number": "string",
+        "register_no": "string",
+        "program": "123e4567-e89b-12d3-a456-426614174000",
+        "current_semester": 0,
+        "admission_date": "2023-10-23",
+        "batch_year": 0,
+        "batch": "string",
+        "division": "string"
+      },
+      "faculty_profile": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "employee_id": "string",
+        "designation": "string",
+        "specialization": "string",
+        "joining_date": "2023-10-23",
+        "consultation_hours": null
+      }
+    }
+  ]
+}
+```
 
 ---
 
-### attendance_me_list_2
-**GET** `/api/v1/attendance/me/{offering_id}/`
+## `GET /api/v1/academics/programs/`
 
-GET /api/v1/attendance/me/{offering_id}/
+**Summary**: academics_programs_list
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| offering_id | path | Yes | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `degree_type` | `query` | `string` | No | * `UG` - Undergraduate * `PG` - Postgraduate * `PhD` - Doctorate * `Diploma` - Diploma |
+| `department` | `query` | `string (uuid)` | No |  |
+| `is_active` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Program` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "code": "string",
+      "department": "123e4567-e89b-12d3-a456-426614174000",
+      "department_name": "string",
+      "duration_years": 0,
+      "degree_type": "UG",
+      "is_active": true
+    }
+  ]
+}
+```
 
 ---
 
-## Authentication
+## `POST /api/v1/academics/programs/`
 
-### auth_login_create
-**POST** `/api/v1/auth/login/`
+**Summary**: academics_programs_create
 
-Takes a set of user credentials and returns an access and refresh JSON web
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `duration_years` | `integer` | Yes |  |
+| `degree_type` | `DegreeTypeEnum` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `duration_years` | `integer` | Yes |  |
+| `degree_type` | `DegreeTypeEnum` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+---
+
+## `GET /api/v1/academics/programs/{id}/`
+
+**Summary**: academics_programs_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `duration_years` | `integer` | Yes |  |
+| `degree_type` | `DegreeTypeEnum` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+---
+
+## `PUT /api/v1/academics/programs/{id}/`
+
+**Summary**: academics_programs_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `duration_years` | `integer` | Yes |  |
+| `degree_type` | `DegreeTypeEnum` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `duration_years` | `integer` | Yes |  |
+| `degree_type` | `DegreeTypeEnum` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+---
+
+## `PATCH /api/v1/academics/programs/{id}/`
+
+**Summary**: academics_programs_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `code` | `string` | No |  |
+| `department` | `string` | No |  |
+| `duration_years` | `integer` | No |  |
+| `degree_type` | `DegreeTypeEnum` | No |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `department` | `string` | Yes |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `duration_years` | `integer` | Yes |  |
+| `degree_type` | `DegreeTypeEnum` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "duration_years": 0,
+  "degree_type": "UG",
+  "is_active": true
+}
+```
+
+---
+
+## `DELETE /api/v1/academics/programs/{id}/`
+
+**Summary**: academics_programs_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/academics/schools/`
+
+**Summary**: academics_schools_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of School` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "code": "string",
+      "dean": "123e4567-e89b-12d3-a456-426614174000",
+      "dean_name": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/academics/schools/`
+
+**Summary**: academics_schools_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `dean` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `dean` | `string` | No |  |
+| `dean_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000",
+  "dean_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/academics/schools/{id}/`
+
+**Summary**: academics_schools_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `dean` | `string` | No |  |
+| `dean_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000",
+  "dean_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/academics/schools/{id}/`
+
+**Summary**: academics_schools_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `dean` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `dean` | `string` | No |  |
+| `dean_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000",
+  "dean_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/academics/schools/{id}/`
+
+**Summary**: academics_schools_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `code` | `string` | No |  |
+| `dean` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `dean` | `string` | No |  |
+| `dean_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "dean": "123e4567-e89b-12d3-a456-426614174000",
+  "dean_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/academics/schools/{id}/`
+
+**Summary**: academics_schools_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/academics/semesters/`
+
+**Summary**: academics_semesters_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Semester` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "academic_year": "string",
+      "start_date": "2023-10-23",
+      "end_date": "2023-10-23",
+      "is_current": true
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/academics/semesters/`
+
+**Summary**: academics_semesters_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+---
+
+## `GET /api/v1/academics/semesters/{id}/`
+
+**Summary**: academics_semesters_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+---
+
+## `PUT /api/v1/academics/semesters/{id}/`
+
+**Summary**: academics_semesters_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+---
+
+## `PATCH /api/v1/academics/semesters/{id}/`
+
+**Summary**: academics_semesters_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `academic_year` | `string` | No |  |
+| `start_date` | `string` | No |  |
+| `end_date` | `string` | No |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+---
+
+# Admin APIs
+
+## `GET /api/v1/admin/audit-logs/`
+
+**Summary**: GET /api/v1/admin/audit-logs/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `action` | `query` | `string` | No |  |
+| `entity_type` | `query` | `string` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `user` | `query` | `string (uuid)` | No |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of AuditLog` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "user": "123e4567-e89b-12d3-a456-426614174000",
+      "user_email": "string",
+      "action": "string",
+      "entity_type": "string",
+      "entity_id": "123e4567-e89b-12d3-a456-426614174000",
+      "details": null,
+      "ip_address": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `GET /api/v1/notifications/admin/stats/`
+
+**Summary**: GET /api/v1/notifications/admin/stats/
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `NotificationStatsData` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": {
+    "total": 0,
+    "today": 0,
+    "this_week": 0,
+    "this_month": 0,
+    "by_status": {},
+    "delivery_rate": 0.0
+  }
+}
+```
+
+---
+
+# Assignments APIs
+
+## `GET /api/v1/assignments/`
+
+**Summary**: assignments_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `assignment_type` | `query` | `string` | No | * `assignment` - Assignment * `quiz` - Quiz * `exam` - Exam * `project` - Project |
+| `course_offering` | `query` | `string (uuid)` | No |  |
+| `is_published` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Assignment` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "string",
+      "description": "string",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "course_name": "string",
+      "created_by": "123e4567-e89b-12d3-a456-426614174000",
+      "created_by_name": "string",
+      "due_date": "2023-10-23T12:00:00Z",
+      "max_marks": "string",
+      "assignment_type": "assignment",
+      "attachments": null,
+      "is_published": true,
+      "submission_count": 0,
+      "created_at": "2023-10-23T12:00:00Z",
+      "updated_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/assignments/`
+
+**Summary**: assignments_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | Yes |  |
+| `due_date` | `string` | Yes |  |
+| `max_marks` | `string` | Yes |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `due_date` | `string` | Yes |  |
+| `max_marks` | `string` | Yes |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `submission_count` | `integer` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true,
+  "submission_count": 0,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/assignments/{id}/`
+
+**Summary**: assignments_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `due_date` | `string` | Yes |  |
+| `max_marks` | `string` | Yes |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `submission_count` | `integer` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true,
+  "submission_count": 0,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/assignments/{id}/`
+
+**Summary**: assignments_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | Yes |  |
+| `due_date` | `string` | Yes |  |
+| `max_marks` | `string` | Yes |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `due_date` | `string` | Yes |  |
+| `max_marks` | `string` | Yes |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `submission_count` | `integer` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true,
+  "submission_count": 0,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/assignments/{id}/`
+
+**Summary**: assignments_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | No |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `due_date` | `string` | No |  |
+| `max_marks` | `string` | No |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `due_date` | `string` | Yes |  |
+| `max_marks` | `string` | Yes |  |
+| `assignment_type` | `AssignmentTypeEnum` | No |  |
+| `attachments` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `submission_count` | `integer` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "due_date": "2023-10-23T12:00:00Z",
+  "max_marks": "string",
+  "assignment_type": "assignment",
+  "attachments": null,
+  "is_published": true,
+  "submission_count": 0,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/assignments/{id}/`
+
+**Summary**: assignments_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/assignments/{id}/submissions/`
+
+**Summary**: GET /api/v1/assignments/{id}/submissions/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Submission` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "assignment": "123e4567-e89b-12d3-a456-426614174000",
+      "student": "123e4567-e89b-12d3-a456-426614174000",
+      "student_name": "string",
+      "file": "https://example.com/resource",
+      "text_content": "string",
+      "submitted_at": "2023-10-23T12:00:00Z",
+      "marks_obtained": "string",
+      "grade": "string",
+      "feedback": "string",
+      "graded_by": "123e4567-e89b-12d3-a456-426614174000",
+      "graded_at": "2023-10-23T12:00:00Z",
+      "status": "draft"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/assignments/{id}/submit/`
+
+**Summary**: POST /api/v1/assignments/{id}/submit/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | `string` | No |  |
+| `text_content` | `string` | No |  |
+| `marks_obtained` | `string` | No |  |
+| `grade` | `string` | No |  |
+| `feedback` | `string` | No |  |
+| `status` | `SubmissionStatusEnum` | No |  |
+
+**Example Request**:
+```json
+{
+  "file": "string",
+  "text_content": "string",
+  "marks_obtained": "string",
+  "grade": "string",
+  "feedback": "string",
+  "status": "draft"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `assignment` | `string` | Yes |  (read-only) |
+| `student` | `string` | Yes |  (read-only) |
+| `student_name` | `string` | Yes |  (read-only) |
+| `file` | `string` | No |  |
+| `text_content` | `string` | No |  |
+| `submitted_at` | `string` | Yes |  (read-only) |
+| `marks_obtained` | `string` | No |  |
+| `grade` | `string` | No |  |
+| `feedback` | `string` | No |  |
+| `graded_by` | `string` | Yes |  (read-only) |
+| `graded_at` | `string` | Yes |  (read-only) |
+| `status` | `SubmissionStatusEnum` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "assignment": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "student_name": "string",
+  "file": "https://example.com/resource",
+  "text_content": "string",
+  "submitted_at": "2023-10-23T12:00:00Z",
+  "marks_obtained": "string",
+  "grade": "string",
+  "feedback": "string",
+  "graded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "graded_at": "2023-10-23T12:00:00Z",
+  "status": "draft"
+}
+```
+
+---
+
+## `GET /api/v1/assignments/export/{offering_id}/`
+
+**Summary**: GET /api/v1/assignments/export/{offering_id}/ — CSV export.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `offering_id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+---
+
+# Attendance APIs
+
+## `PUT /api/v1/attendance/{id}/`
+
+**Summary**: attendance_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `timetable_entry` | `string` | Yes |  |
+| `student` | `string` | Yes |  |
+| `date` | `string` | Yes |  |
+| `status` | `AttendanceRecordStatusEnum` | Yes |  |
+| `remarks` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "date": "2023-10-23",
+  "status": "present",
+  "remarks": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `timetable_entry` | `string` | Yes |  |
+| `student` | `string` | Yes |  |
+| `student_name` | `string` | Yes |  (read-only) |
+| `date` | `string` | Yes |  |
+| `status` | `AttendanceRecordStatusEnum` | Yes |  |
+| `marked_by` | `string` | Yes |  (read-only) |
+| `remarks` | `string` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "student_name": "string",
+  "date": "2023-10-23",
+  "status": "present",
+  "marked_by": "123e4567-e89b-12d3-a456-426614174000",
+  "remarks": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/attendance/{id}/`
+
+**Summary**: attendance_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `timetable_entry` | `string` | No |  |
+| `student` | `string` | No |  |
+| `date` | `string` | No |  |
+| `status` | `AttendanceRecordStatusEnum` | No |  |
+| `remarks` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "date": "2023-10-23",
+  "status": "present",
+  "remarks": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `timetable_entry` | `string` | Yes |  |
+| `student` | `string` | Yes |  |
+| `student_name` | `string` | Yes |  (read-only) |
+| `date` | `string` | Yes |  |
+| `status` | `AttendanceRecordStatusEnum` | Yes |  |
+| `marked_by` | `string` | Yes |  (read-only) |
+| `remarks` | `string` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "student_name": "string",
+  "date": "2023-10-23",
+  "status": "present",
+  "marked_by": "123e4567-e89b-12d3-a456-426614174000",
+  "remarks": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/attendance/course/{offering_id}/`
+
+**Summary**: GET /api/v1/attendance/course/{offering_id}/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `offering_id` | `path` | `string (uuid)` | Yes |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of AttendanceRecord` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+      "student": "123e4567-e89b-12d3-a456-426614174000",
+      "student_name": "string",
+      "date": "2023-10-23",
+      "status": "present",
+      "marked_by": "123e4567-e89b-12d3-a456-426614174000",
+      "remarks": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/attendance/mark/`
+
+**Summary**: POST /api/v1/attendance/mark/ — Mark attendance in bulk.
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `timetable_entry_id` | `string` | Yes |  |
+| `date` | `string` | Yes |  |
+| `records` | `Array of object` | Yes | List of {"student_id": "...", "status": "present|absent|late|excused"} |
+
+**Example Request**:
+```json
+{
+  "timetable_entry_id": "123e4567-e89b-12d3-a456-426614174000",
+  "date": "2023-10-23",
+  "records": [
+    {}
+  ]
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `timetable_entry` | `string` | Yes |  |
+| `student` | `string` | Yes |  |
+| `student_name` | `string` | Yes |  (read-only) |
+| `date` | `string` | Yes |  |
+| `status` | `AttendanceRecordStatusEnum` | Yes |  |
+| `marked_by` | `string` | Yes |  (read-only) |
+| `remarks` | `string` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+    "student": "123e4567-e89b-12d3-a456-426614174000",
+    "student_name": "string",
+    "date": "2023-10-23",
+    "status": "present",
+    "marked_by": "123e4567-e89b-12d3-a456-426614174000",
+    "remarks": "string",
+    "created_at": "2023-10-23T12:00:00Z"
+  }
+]
+```
+
+---
+
+## `GET /api/v1/attendance/me/`
+
+**Summary**: GET /api/v1/attendance/me/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of AttendanceRecord` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+      "student": "123e4567-e89b-12d3-a456-426614174000",
+      "student_name": "string",
+      "date": "2023-10-23",
+      "status": "present",
+      "marked_by": "123e4567-e89b-12d3-a456-426614174000",
+      "remarks": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `GET /api/v1/attendance/me/{offering_id}/`
+
+**Summary**: GET /api/v1/attendance/me/{offering_id}/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `offering_id` | `path` | `string (uuid)` | Yes |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of AttendanceRecord` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "timetable_entry": "123e4567-e89b-12d3-a456-426614174000",
+      "student": "123e4567-e89b-12d3-a456-426614174000",
+      "student_name": "string",
+      "date": "2023-10-23",
+      "status": "present",
+      "marked_by": "123e4567-e89b-12d3-a456-426614174000",
+      "remarks": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+# Auth APIs
+
+## `POST /api/v1/auth/login/`
+
+**Summary**: Takes a set of user credentials and returns an access and refresh JSON web
 token pair to prove the authentication of those credentials.
 
-**Responses:**
-- **200**: 
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes |  (write-only) |
+| `password` | `string` | Yes |  (write-only) |
+
+**Example Request**:
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `access` | `string` | Yes |  (read-only) |
+| `refresh` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "access": "string",
+  "refresh": "string"
+}
+```
 
 ---
 
-### auth_logout_create
-**POST** `/api/v1/auth/logout/`
+## `POST /api/v1/auth/logout/`
 
-POST /api/v1/auth/logout/ — Blacklist the refresh token.
+**Summary**: POST /api/v1/auth/logout/ — Blacklist the refresh token.
 
-**Responses:**
-- **200**: 
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `refresh` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "refresh": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `message` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "message": "string"
+}
+```
 
 ---
 
-### auth_password_change_create
-**POST** `/api/v1/auth/password/change/`
+## `POST /api/v1/auth/password/change/`
 
-POST /api/v1/auth/password/change/
+**Summary**: POST /api/v1/auth/password/change/
 
-**Responses:**
-- **200**: 
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `old_password` | `string` | Yes |  |
+| `new_password` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "old_password": "string",
+  "new_password": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `message` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "message": "string"
+}
+```
 
 ---
 
-### auth_refresh_create
-**POST** `/api/v1/auth/refresh/`
+## `POST /api/v1/auth/refresh/`
 
-Takes a refresh type JSON web token and returns an access type JSON web
+**Summary**: Takes a refresh type JSON web token and returns an access type JSON web
 token if the refresh token is valid.
 
-**Responses:**
-- **200**: 
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `refresh` | `string` | Yes |  |
 
----
-
-### auth_register_create
-**POST** `/api/v1/auth/register/`
-
-POST /api/v1/auth/register/ — Self-registration.
-
-**Responses:**
-- **201**: 
-
----
-
-## Communications
-
-### communications_announcements_list
-**GET** `/api/v1/communications/announcements/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| is_published | query | No | boolean |  |
-| is_urgent | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-| target_type | query | No | string | * `all` - All Users * `department` - Department * `course` - Course * `section` - Section |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_announcements_create
-**POST** `/api/v1/communications/announcements/`
-
-**Responses:**
-- **201**: 
-
----
-
-### communications_announcements_retrieve
-**GET** `/api/v1/communications/announcements/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_announcements_update
-**PUT** `/api/v1/communications/announcements/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_announcements_partial_update
-**PATCH** `/api/v1/communications/announcements/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_announcements_destroy
-**DELETE** `/api/v1/communications/announcements/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### communications_forums_list
-**GET** `/api/v1/communications/forums/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| course_offering | query | No | string |  |
-| is_active | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_forums_create
-**POST** `/api/v1/communications/forums/`
-
-**Responses:**
-- **201**: 
-
----
-
-### communications_forums_posts_update
-**PUT** `/api/v1/communications/forums/{forum_id}/posts/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| forum_id | path | Yes | string |  |
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_forums_posts_partial_update
-**PATCH** `/api/v1/communications/forums/{forum_id}/posts/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| forum_id | path | Yes | string |  |
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_forums_posts_delete_destroy
-**DELETE** `/api/v1/communications/forums/{forum_id}/posts/{id}/delete/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| forum_id | path | Yes | string |  |
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### communications_forums_retrieve
-**GET** `/api/v1/communications/forums/{id}/`
-
-GET /api/v1/communications/forums/{id}/ — includes top-level posts.
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_forums_posts_create
-**POST** `/api/v1/communications/forums/{id}/posts/`
-
-POST /api/v1/communications/forums/{id}/posts/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **201**: 
-
----
-
-### communications_messages_list
-**GET** `/api/v1/communications/messages/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_messages_create
-**POST** `/api/v1/communications/messages/`
-
-**Responses:**
-- **201**: 
-
----
-
-### communications_messages_retrieve
-**GET** `/api/v1/communications/messages/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### communications_messages_destroy
-**DELETE** `/api/v1/communications/messages/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-## Content
-
-### content_list
-**GET** `/api/v1/content/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| content_type | query | No | string | * `document` - Document * `video` - Video * `image` - Image * `link` - Link * `assignment` - Assignment |
-| course_offering | query | No | string |  |
-| folder | query | No | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-| visibility | query | No | string | * `public` - Public * `department` - Department * `course` - Course * `private` - Private |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_create
-**POST** `/api/v1/content/`
-
-**Responses:**
-- **201**: 
-
----
-
-### content_retrieve
-**GET** `/api/v1/content/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_update
-**PUT** `/api/v1/content/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_partial_update
-**PATCH** `/api/v1/content/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_destroy
-**DELETE** `/api/v1/content/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### content_download_retrieve
-**GET** `/api/v1/content/{id}/download/`
-
-GET /api/v1/content/{id}/download/ — returns file URL and logs download.
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_stats_retrieve
-**GET** `/api/v1/content/{id}/stats/`
-
-GET /api/v1/content/{id}/stats/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_bookmarks_list
-**GET** `/api/v1/content/bookmarks/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_bookmarks_create
-**POST** `/api/v1/content/bookmarks/`
-
-**Responses:**
-- **201**: 
-
----
-
-### content_bookmarks_destroy
-**DELETE** `/api/v1/content/bookmarks/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### content_folders_list
-**GET** `/api/v1/content/folders/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| course_offering | query | No | string |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| parent | query | No | string |  |
-| search | query | No | string | A search term. |
-| visibility | query | No | string | * `public` - Public * `department` - Department * `course` - Course * `private` - Private |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_folders_create
-**POST** `/api/v1/content/folders/`
-
-**Responses:**
-- **201**: 
-
----
-
-### content_folders_retrieve
-**GET** `/api/v1/content/folders/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_folders_update
-**PUT** `/api/v1/content/folders/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_folders_partial_update
-**PATCH** `/api/v1/content/folders/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_folders_destroy
-**DELETE** `/api/v1/content/folders/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### content_recent_list
-**GET** `/api/v1/content/recent/`
-
-GET /api/v1/content/recent/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_tags_list
-**GET** `/api/v1/content/tags/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### content_tags_create
-**POST** `/api/v1/content/tags/`
-
-**Responses:**
-- **201**: 
-
----
-
-## Departments
-
-### departments_list
-**GET** `/api/v1/departments/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### departments_create
-**POST** `/api/v1/departments/`
-
-**Responses:**
-- **201**: 
-
----
-
-### departments_retrieve
-**GET** `/api/v1/departments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### departments_update
-**PUT** `/api/v1/departments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### departments_partial_update
-**PATCH** `/api/v1/departments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### departments_destroy
-**DELETE** `/api/v1/departments/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-## Notifications
-
-### notifications_list
-**GET** `/api/v1/notifications/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_read_partial_update
-**PATCH** `/api/v1/notifications/{id}/read/`
-
-PATCH /api/v1/notifications/{id}/read/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_admin_stats_retrieve
-**GET** `/api/v1/notifications/admin/stats/`
-
-GET /api/v1/notifications/admin/stats/
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_preferences_list
-**GET** `/api/v1/notifications/preferences/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_preferences_create
-**POST** `/api/v1/notifications/preferences/`
-
-**Responses:**
-- **201**: 
-
----
-
-### notifications_preferences_update
-**PUT** `/api/v1/notifications/preferences/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_preferences_partial_update
-**PATCH** `/api/v1/notifications/preferences/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_read_all_create
-**POST** `/api/v1/notifications/read-all/`
-
-POST /api/v1/notifications/read-all/
-
-**Responses:**
-- **200**: 
-
----
-
-### notifications_unread_count_retrieve
-**GET** `/api/v1/notifications/unread-count/`
-
-GET /api/v1/notifications/unread-count/
-
-**Responses:**
-- **200**: 
-
----
-
-## Root
-
-### root_retrieve
-**GET** `/api/v1/`
-
-API root — health check and endpoint overview.
-
-**Responses:**
-- **200**: 
-
----
-
-## Timetable
-
-### timetable_list
-**GET** `/api/v1/timetable/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| day_of_week | query | No | integer | * `0` - Monday * `1` - Tuesday * `2` - Wednesday * `3` - Thursday * `4` - Friday * `5` - Saturday * `6` - Sunday |
-| is_active | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| room | query | No | string |  |
-| search | query | No | string | A search term. |
-| semester | query | No | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_create
-**POST** `/api/v1/timetable/`
-
-**Responses:**
-- **201**: 
-
----
-
-### timetable_retrieve
-**GET** `/api/v1/timetable/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_update
-**PUT** `/api/v1/timetable/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_partial_update
-**PATCH** `/api/v1/timetable/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_destroy
-**DELETE** `/api/v1/timetable/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### timetable_conflicts_retrieve
-**GET** `/api/v1/timetable/conflicts/`
-
-GET /api/v1/timetable/conflicts/ — check room/faculty conflicts.
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_me_list
-**GET** `/api/v1/timetable/me/`
-
-GET /api/v1/timetable/me/ — student or faculty timetable.
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_rooms_list
-**GET** `/api/v1/timetable/rooms/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| is_available | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| room_type | query | No | string | * `classroom` - Classroom * `lab` - Laboratory * `auditorium` - Auditorium * `conference` - Conference Room |
-| search | query | No | string | A search term. |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_rooms_create
-**POST** `/api/v1/timetable/rooms/`
-
-**Responses:**
-- **201**: 
-
----
-
-### timetable_rooms_retrieve
-**GET** `/api/v1/timetable/rooms/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_rooms_update
-**PUT** `/api/v1/timetable/rooms/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_rooms_partial_update
-**PATCH** `/api/v1/timetable/rooms/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### timetable_rooms_destroy
-**DELETE** `/api/v1/timetable/rooms/{id}/`
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-## Users & Accounts
-
-### users_list
-**GET** `/api/v1/users/`
+**Example Request**:
+```json
+{
+  "refresh": "string"
+}
+```
 
-GET /api/v1/users/ — List users (admin).
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `access` | `string` | Yes |  (read-only) |
+| `refresh` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "access": "string",
+  "refresh": "string"
+}
+```
+
+---
+
+## `POST /api/v1/auth/register/`
+
+**Summary**: POST /api/v1/auth/register/ — Self-registration.
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes |  |
+| `password` | `string` | Yes |  (write-only) |
+| `password_confirm` | `string` | Yes |  (write-only) |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "string",
+  "password_confirm": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin"
+}
+```
+
+---
+
+# Communications APIs
+
+## `GET /api/v1/communications/announcements/`
+
+**Summary**: communications_announcements_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `is_published` | `query` | `boolean` | No |  |
+| `is_urgent` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+| `target_type` | `query` | `string` | No | * `all` - All Users * `department` - Department * `course` - Course * `section` - Section |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Announcement` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "string",
+      "body": "string",
+      "created_by": "123e4567-e89b-12d3-a456-426614174000",
+      "created_by_name": "string",
+      "target_type": "all",
+      "target_id": "123e4567-e89b-12d3-a456-426614174000",
+      "is_urgent": true,
+      "publish_at": "2023-10-23T12:00:00Z",
+      "expires_at": "2023-10-23T12:00:00Z",
+      "is_published": true,
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/communications/announcements/`
+
+**Summary**: communications_announcements_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `body` | `string` | Yes |  |
+| `target_type` | `TargetTypeEnum` | Yes |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "body": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `body` | `string` | Yes |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `target_type` | `TargetTypeEnum` | Yes |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "body": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/communications/announcements/{id}/`
+
+**Summary**: communications_announcements_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `body` | `string` | Yes |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `target_type` | `TargetTypeEnum` | Yes |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "body": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/communications/announcements/{id}/`
+
+**Summary**: communications_announcements_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `body` | `string` | Yes |  |
+| `target_type` | `TargetTypeEnum` | Yes |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "body": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `body` | `string` | Yes |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `target_type` | `TargetTypeEnum` | Yes |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "body": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/communications/announcements/{id}/`
+
+**Summary**: communications_announcements_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | No |  |
+| `body` | `string` | No |  |
+| `target_type` | `TargetTypeEnum` | No |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "body": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `body` | `string` | Yes |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `target_type` | `TargetTypeEnum` | Yes |  |
+| `target_id` | `string` | No |  |
+| `is_urgent` | `boolean` | No |  |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "body": "string",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "target_type": "all",
+  "target_id": "123e4567-e89b-12d3-a456-426614174000",
+  "is_urgent": true,
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/communications/announcements/{id}/`
+
+**Summary**: communications_announcements_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/communications/forums/`
+
+**Summary**: communications_forums_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `course_offering` | `query` | `string (uuid)` | No |  |
+| `is_active` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of DiscussionForum` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "string",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "created_by": "123e4567-e89b-12d3-a456-426614174000",
+      "created_by_name": "string",
+      "is_active": true,
+      "post_count": 0,
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/communications/forums/`
+
+**Summary**: communications_forums_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `course_offering` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `course_offering` | `string` | Yes |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `is_active` | `boolean` | No |  |
+| `post_count` | `integer` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "is_active": true,
+  "post_count": 0,
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/communications/forums/{forum_id}/posts/{id}/`
+
+**Summary**: communications_forums_posts_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `forum_id` | `path` | `string (uuid)` | Yes |  |
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `forum` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `body` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "forum": "123e4567-e89b-12d3-a456-426614174000",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "body": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `forum` | `string` | Yes |  |
+| `author` | `string` | Yes |  (read-only) |
+| `author_name` | `string` | Yes |  (read-only) |
+| `parent` | `string` | No |  |
+| `body` | `string` | Yes |  |
+| `replies` | `Array of object` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "forum": "123e4567-e89b-12d3-a456-426614174000",
+  "author": "123e4567-e89b-12d3-a456-426614174000",
+  "author_name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "body": "string",
+  "replies": [
+    {}
+  ],
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/communications/forums/{forum_id}/posts/{id}/`
+
+**Summary**: communications_forums_posts_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `forum_id` | `path` | `string (uuid)` | Yes |  |
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `forum` | `string` | No |  |
+| `parent` | `string` | No |  |
+| `body` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "forum": "123e4567-e89b-12d3-a456-426614174000",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "body": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `forum` | `string` | Yes |  |
+| `author` | `string` | Yes |  (read-only) |
+| `author_name` | `string` | Yes |  (read-only) |
+| `parent` | `string` | No |  |
+| `body` | `string` | Yes |  |
+| `replies` | `Array of object` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "forum": "123e4567-e89b-12d3-a456-426614174000",
+  "author": "123e4567-e89b-12d3-a456-426614174000",
+  "author_name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "body": "string",
+  "replies": [
+    {}
+  ],
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/communications/forums/{forum_id}/posts/{id}/delete/`
+
+**Summary**: communications_forums_posts_delete_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `forum_id` | `path` | `string (uuid)` | Yes |  |
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `POST /api/v1/communications/forums/{id}/posts/`
+
+**Summary**: POST /api/v1/communications/forums/{id}/posts/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `forum` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `body` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "forum": "123e4567-e89b-12d3-a456-426614174000",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "body": "string"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `forum` | `string` | Yes |  |
+| `author` | `string` | Yes |  (read-only) |
+| `author_name` | `string` | Yes |  (read-only) |
+| `parent` | `string` | No |  |
+| `body` | `string` | Yes |  |
+| `replies` | `Array of object` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "forum": "123e4567-e89b-12d3-a456-426614174000",
+  "author": "123e4567-e89b-12d3-a456-426614174000",
+  "author_name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "body": "string",
+  "replies": [
+    {}
+  ],
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/communications/messages/`
+
+**Summary**: communications_messages_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Message` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "sender": "123e4567-e89b-12d3-a456-426614174000",
+      "sender_name": "string",
+      "receiver": "123e4567-e89b-12d3-a456-426614174000",
+      "receiver_name": "string",
+      "subject": "string",
+      "body": "string",
+      "is_read": true,
+      "read_at": "2023-10-23T12:00:00Z",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/communications/messages/`
+
+**Summary**: communications_messages_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `receiver` | `string` | Yes |  |
+| `subject` | `string` | No |  |
+| `body` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "receiver": "123e4567-e89b-12d3-a456-426614174000",
+  "subject": "string",
+  "body": "string"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `sender` | `string` | Yes |  (read-only) |
+| `sender_name` | `string` | Yes |  (read-only) |
+| `receiver` | `string` | Yes |  |
+| `receiver_name` | `string` | Yes |  (read-only) |
+| `subject` | `string` | No |  |
+| `body` | `string` | Yes |  |
+| `is_read` | `boolean` | Yes |  (read-only) |
+| `read_at` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "sender": "123e4567-e89b-12d3-a456-426614174000",
+  "sender_name": "string",
+  "receiver": "123e4567-e89b-12d3-a456-426614174000",
+  "receiver_name": "string",
+  "subject": "string",
+  "body": "string",
+  "is_read": true,
+  "read_at": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/communications/messages/{id}/`
+
+**Summary**: communications_messages_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `sender` | `string` | Yes |  (read-only) |
+| `sender_name` | `string` | Yes |  (read-only) |
+| `receiver` | `string` | Yes |  |
+| `receiver_name` | `string` | Yes |  (read-only) |
+| `subject` | `string` | No |  |
+| `body` | `string` | Yes |  |
+| `is_read` | `boolean` | Yes |  (read-only) |
+| `read_at` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "sender": "123e4567-e89b-12d3-a456-426614174000",
+  "sender_name": "string",
+  "receiver": "123e4567-e89b-12d3-a456-426614174000",
+  "receiver_name": "string",
+  "subject": "string",
+  "body": "string",
+  "is_read": true,
+  "read_at": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/communications/messages/{id}/`
+
+**Summary**: communications_messages_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+# Content APIs
+
+## `GET /api/v1/content/`
+
+**Summary**: content_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `content_type` | `query` | `string` | No | * `document` - Document * `video` - Video * `image` - Image * `link` - Link * `assignment` - Assignment |
+| `course_offering` | `query` | `string (uuid)` | No |  |
+| `folder` | `query` | `string (uuid)` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+| `visibility` | `query` | `string` | No | * `public` - Public * `department` - Department * `course` - Course * `private` - Private |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of ContentList` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "string",
+      "content_type": "document",
+      "file_size": 0,
+      "mime_type": "string",
+      "uploaded_by": "123e4567-e89b-12d3-a456-426614174000",
+      "uploaded_by_name": "string",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "visibility": "public",
+      "is_published": true,
+      "tags": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "name": "string"
+        }
+      ],
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/content/`
+
+**Summary**: content_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | Yes |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tag_ids` | `Array of string` | No |  (write-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "string",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "tag_ids": [
+    "123e4567-e89b-12d3-a456-426614174000"
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | Yes |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `uploaded_by` | `string` | Yes |  (read-only) |
+| `uploaded_by_name` | `string` | Yes |  (read-only) |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tags` | `Array of ContentTag` | Yes |  (read-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "https://example.com/resource",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by_name": "string",
+  "visibility": "public",
+  "tags": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string"
+    }
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/content/{id}/`
+
+**Summary**: content_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | Yes |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `uploaded_by` | `string` | Yes |  (read-only) |
+| `uploaded_by_name` | `string` | Yes |  (read-only) |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tags` | `Array of ContentTag` | Yes |  (read-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "https://example.com/resource",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by_name": "string",
+  "visibility": "public",
+  "tags": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string"
+    }
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/content/{id}/`
+
+**Summary**: content_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | Yes |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tag_ids` | `Array of string` | No |  (write-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "string",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "tag_ids": [
+    "123e4567-e89b-12d3-a456-426614174000"
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | Yes |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `uploaded_by` | `string` | Yes |  (read-only) |
+| `uploaded_by_name` | `string` | Yes |  (read-only) |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tags` | `Array of ContentTag` | Yes |  (read-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "https://example.com/resource",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by_name": "string",
+  "visibility": "public",
+  "tags": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string"
+    }
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/content/{id}/`
+
+**Summary**: content_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | No |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | No |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tag_ids` | `Array of string` | No |  (write-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "string",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "tag_ids": [
+    "123e4567-e89b-12d3-a456-426614174000"
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `title` | `string` | Yes |  |
+| `description` | `string` | No |  |
+| `content_type` | `ContentTypeEnum` | Yes |  |
+| `file` | `string` | No |  |
+| `file_size` | `integer` | No |  |
+| `mime_type` | `string` | No |  |
+| `external_url` | `string` | No |  |
+| `folder` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `uploaded_by` | `string` | Yes |  (read-only) |
+| `uploaded_by_name` | `string` | Yes |  (read-only) |
+| `visibility` | `VisibilityEnum` | No |  |
+| `tags` | `Array of ContentTag` | Yes |  (read-only) |
+| `publish_at` | `string` | No |  |
+| `expires_at` | `string` | No |  |
+| `is_published` | `boolean` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "string",
+  "description": "string",
+  "content_type": "document",
+  "file": "https://example.com/resource",
+  "file_size": 0,
+  "mime_type": "string",
+  "external_url": "https://example.com/resource",
+  "folder": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "uploaded_by_name": "string",
+  "visibility": "public",
+  "tags": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string"
+    }
+  ],
+  "publish_at": "2023-10-23T12:00:00Z",
+  "expires_at": "2023-10-23T12:00:00Z",
+  "is_published": true,
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/content/{id}/`
+
+**Summary**: content_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/content/{id}/download/`
+
+**Summary**: GET /api/v1/content/{id}/download/ — returns file URL and logs download.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `object` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": {}
+}
+```
+
+---
+
+## `GET /api/v1/content/{id}/stats/`
+
+**Summary**: GET /api/v1/content/{id}/stats/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `ContentStatsData` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": {
+    "total_views": 0,
+    "total_downloads": 0,
+    "bookmarks": 0
+  }
+}
+```
+
+---
+
+## `GET /api/v1/content/bookmarks/`
+
+**Summary**: content_bookmarks_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Bookmark` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "user": "123e4567-e89b-12d3-a456-426614174000",
+      "content": "123e4567-e89b-12d3-a456-426614174000",
+      "content_title": "string",
+      "content_type": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/content/bookmarks/`
+
+**Summary**: content_bookmarks_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "content": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `user` | `string` | Yes |  (read-only) |
+| `content` | `string` | Yes |  |
+| `content_title` | `string` | Yes |  (read-only) |
+| `content_type` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "user": "123e4567-e89b-12d3-a456-426614174000",
+  "content": "123e4567-e89b-12d3-a456-426614174000",
+  "content_title": "string",
+  "content_type": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/content/bookmarks/{id}/`
+
+**Summary**: content_bookmarks_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/content/folders/`
+
+**Summary**: content_folders_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `course_offering` | `query` | `string (uuid)` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `parent` | `query` | `string (uuid)` | No |  |
+| `search` | `query` | `string` | No | A search term. |
+| `visibility` | `query` | `string` | No | * `public` - Public * `department` - Department * `course` - Course * `private` - Private |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of ContentFolder` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "parent": "123e4567-e89b-12d3-a456-426614174000",
+      "created_by": "123e4567-e89b-12d3-a456-426614174000",
+      "created_by_name": "string",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "visibility": "public",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/content/folders/`
+
+**Summary**: content_folders_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/content/folders/{id}/`
+
+**Summary**: content_folders_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/content/folders/{id}/`
+
+**Summary**: content_folders_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/content/folders/{id}/`
+
+**Summary**: content_folders_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `parent` | `string` | No |  |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `parent` | `string` | No |  |
+| `created_by` | `string` | Yes |  (read-only) |
+| `created_by_name` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | No |  |
+| `visibility` | `VisibilityEnum` | No |  |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "parent": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by": "123e4567-e89b-12d3-a456-426614174000",
+  "created_by_name": "string",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "visibility": "public",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/content/folders/{id}/`
+
+**Summary**: content_folders_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/content/recent/`
+
+**Summary**: GET /api/v1/content/recent/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of ContentList` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "string",
+      "content_type": "document",
+      "file_size": 0,
+      "mime_type": "string",
+      "uploaded_by": "123e4567-e89b-12d3-a456-426614174000",
+      "uploaded_by_name": "string",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "visibility": "public",
+      "is_published": true,
+      "tags": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "name": "string"
+        }
+      ],
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `GET /api/v1/content/tags/`
+
+**Summary**: content_tags_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of ContentTag` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/content/tags/`
+
+**Summary**: content_tags_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "name": "string"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string"
+}
+```
+
+---
+
+# Departments APIs
+
+## `GET /api/v1/departments/`
+
+**Summary**: departments_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Department` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "code": "string",
+      "school": "123e4567-e89b-12d3-a456-426614174000",
+      "school_name": "string",
+      "head": "123e4567-e89b-12d3-a456-426614174000",
+      "head_name": "string",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/departments/`
+
+**Summary**: departments_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `school` | `string` | No |  |
+| `head` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "head": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `school` | `string` | No |  |
+| `school_name` | `string` | Yes |  (read-only) |
+| `head` | `string` | No |  |
+| `head_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "school_name": "string",
+  "head": "123e4567-e89b-12d3-a456-426614174000",
+  "head_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `GET /api/v1/departments/{id}/`
+
+**Summary**: departments_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `school` | `string` | No |  |
+| `school_name` | `string` | Yes |  (read-only) |
+| `head` | `string` | No |  |
+| `head_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "school_name": "string",
+  "head": "123e4567-e89b-12d3-a456-426614174000",
+  "head_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PUT /api/v1/departments/{id}/`
+
+**Summary**: departments_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `school` | `string` | No |  |
+| `head` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "head": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `school` | `string` | No |  |
+| `school_name` | `string` | Yes |  (read-only) |
+| `head` | `string` | No |  |
+| `head_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "school_name": "string",
+  "head": "123e4567-e89b-12d3-a456-426614174000",
+  "head_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `PATCH /api/v1/departments/{id}/`
+
+**Summary**: departments_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `code` | `string` | No |  |
+| `school` | `string` | No |  |
+| `head` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "head": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `code` | `string` | Yes |  |
+| `school` | `string` | No |  |
+| `school_name` | `string` | Yes |  (read-only) |
+| `head` | `string` | No |  |
+| `head_name` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "code": "string",
+  "school": "123e4567-e89b-12d3-a456-426614174000",
+  "school_name": "string",
+  "head": "123e4567-e89b-12d3-a456-426614174000",
+  "head_name": "string",
+  "created_at": "2023-10-23T12:00:00Z"
+}
+```
+
+---
+
+## `DELETE /api/v1/departments/{id}/`
+
+**Summary**: departments_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+# Forums APIs
+
+## `GET /api/v1/communications/forums/{id}/`
+
+**Summary**: GET /api/v1/communications/forums/{id}/ — includes top-level posts.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `object` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": {}
+}
+```
+
+---
+
+# Notifications APIs
+
+## `GET /api/v1/notifications/`
+
+**Summary**: notifications_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Notification` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "user": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "string",
+      "message": "string",
+      "notification_type": "announcement",
+      "reference_type": "string",
+      "reference_id": "123e4567-e89b-12d3-a456-426614174000",
+      "channel": "in_app",
+      "is_read": true,
+      "read_at": "2023-10-23T12:00:00Z",
+      "status": "pending",
+      "created_at": "2023-10-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `PATCH /api/v1/notifications/{id}/read/`
+
+**Summary**: PATCH /api/v1/notifications/{id}/read/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `message` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "message": "string"
+}
+```
+
+---
+
+## `GET /api/v1/notifications/preferences/`
+
+**Summary**: notifications_preferences_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of NotificationPreference` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "user": "123e4567-e89b-12d3-a456-426614174000",
+      "notification_type": "string",
+      "email_enabled": true,
+      "push_enabled": true,
+      "in_app_enabled": true
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/notifications/preferences/`
+
+**Summary**: notifications_preferences_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `notification_type` | `string` | Yes |  |
+| `email_enabled` | `boolean` | No |  |
+| `push_enabled` | `boolean` | No |  |
+| `in_app_enabled` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "notification_type": "string",
+  "email_enabled": true,
+  "push_enabled": true,
+  "in_app_enabled": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `user` | `string` | Yes |  (read-only) |
+| `notification_type` | `string` | Yes |  |
+| `email_enabled` | `boolean` | No |  |
+| `push_enabled` | `boolean` | No |  |
+| `in_app_enabled` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "user": "123e4567-e89b-12d3-a456-426614174000",
+  "notification_type": "string",
+  "email_enabled": true,
+  "push_enabled": true,
+  "in_app_enabled": true
+}
+```
+
+---
+
+## `PUT /api/v1/notifications/preferences/{id}/`
+
+**Summary**: notifications_preferences_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `notification_type` | `string` | Yes |  |
+| `email_enabled` | `boolean` | No |  |
+| `push_enabled` | `boolean` | No |  |
+| `in_app_enabled` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "notification_type": "string",
+  "email_enabled": true,
+  "push_enabled": true,
+  "in_app_enabled": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `user` | `string` | Yes |  (read-only) |
+| `notification_type` | `string` | Yes |  |
+| `email_enabled` | `boolean` | No |  |
+| `push_enabled` | `boolean` | No |  |
+| `in_app_enabled` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "user": "123e4567-e89b-12d3-a456-426614174000",
+  "notification_type": "string",
+  "email_enabled": true,
+  "push_enabled": true,
+  "in_app_enabled": true
+}
+```
+
+---
+
+## `PATCH /api/v1/notifications/preferences/{id}/`
+
+**Summary**: notifications_preferences_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `notification_type` | `string` | No |  |
+| `email_enabled` | `boolean` | No |  |
+| `push_enabled` | `boolean` | No |  |
+| `in_app_enabled` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "notification_type": "string",
+  "email_enabled": true,
+  "push_enabled": true,
+  "in_app_enabled": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `user` | `string` | Yes |  (read-only) |
+| `notification_type` | `string` | Yes |  |
+| `email_enabled` | `boolean` | No |  |
+| `push_enabled` | `boolean` | No |  |
+| `in_app_enabled` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "user": "123e4567-e89b-12d3-a456-426614174000",
+  "notification_type": "string",
+  "email_enabled": true,
+  "push_enabled": true,
+  "in_app_enabled": true
+}
+```
+
+---
+
+## `POST /api/v1/notifications/read-all/`
+
+**Summary**: POST /api/v1/notifications/read-all/
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `message` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "message": "string"
+}
+```
+
+---
+
+## `GET /api/v1/notifications/unread-count/`
+
+**Summary**: GET /api/v1/notifications/unread-count/
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `UnreadCountData` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": {
+    "unread_count": 0
+  }
+}
+```
+
+---
+
+# Root APIs
+
+## `GET /api/v1/`
+
+**Summary**: API root — health check and endpoint overview.
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `message` | `string` | Yes |  |
+| `endpoints` | `object` | Yes |  |
+| `docs` | `object` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "message": "string",
+  "endpoints": {},
+  "docs": {}
+}
+```
+
+---
+
+# Semesters APIs
+
+## `GET /api/v1/academics/semesters/current/`
+
+**Summary**: GET /api/v1/academics/semesters/current/
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `academic_year` | `string` | Yes |  |
+| `start_date` | `string` | Yes |  |
+| `end_date` | `string` | Yes |  |
+| `is_current` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "academic_year": "string",
+  "start_date": "2023-10-23",
+  "end_date": "2023-10-23",
+  "is_current": true
+}
+```
+
+---
+
+# Submissions APIs
+
+## `PATCH /api/v1/assignments/{id}/submissions/{sub_id}/grade/`
+
+**Summary**: PATCH /api/v1/assignments/{pk}/submissions/{sub_id}/grade/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+| `sub_id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `marks_obtained` | `string` | No |  |
+| `grade` | `string` | No |  |
+| `feedback` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "marks_obtained": "string",
+  "grade": "string",
+  "feedback": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `assignment` | `string` | Yes |  (read-only) |
+| `student` | `string` | Yes |  (read-only) |
+| `student_name` | `string` | Yes |  (read-only) |
+| `file` | `string` | No |  |
+| `text_content` | `string` | No |  |
+| `submitted_at` | `string` | Yes |  (read-only) |
+| `marks_obtained` | `string` | No |  |
+| `grade` | `string` | No |  |
+| `feedback` | `string` | No |  |
+| `graded_by` | `string` | Yes |  (read-only) |
+| `graded_at` | `string` | Yes |  (read-only) |
+| `status` | `SubmissionStatusEnum` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "assignment": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "student_name": "string",
+  "file": "https://example.com/resource",
+  "text_content": "string",
+  "submitted_at": "2023-10-23T12:00:00Z",
+  "marks_obtained": "string",
+  "grade": "string",
+  "feedback": "string",
+  "graded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "graded_at": "2023-10-23T12:00:00Z",
+  "status": "draft"
+}
+```
+
+---
+
+## `GET /api/v1/assignments/{id}/submissions/me/`
+
+**Summary**: GET /api/v1/assignments/{id}/submissions/me/
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `assignment` | `string` | Yes |  (read-only) |
+| `student` | `string` | Yes |  (read-only) |
+| `student_name` | `string` | Yes |  (read-only) |
+| `file` | `string` | No |  |
+| `text_content` | `string` | No |  |
+| `submitted_at` | `string` | Yes |  (read-only) |
+| `marks_obtained` | `string` | No |  |
+| `grade` | `string` | No |  |
+| `feedback` | `string` | No |  |
+| `graded_by` | `string` | Yes |  (read-only) |
+| `graded_at` | `string` | Yes |  (read-only) |
+| `status` | `SubmissionStatusEnum` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "assignment": "123e4567-e89b-12d3-a456-426614174000",
+  "student": "123e4567-e89b-12d3-a456-426614174000",
+  "student_name": "string",
+  "file": "https://example.com/resource",
+  "text_content": "string",
+  "submitted_at": "2023-10-23T12:00:00Z",
+  "marks_obtained": "string",
+  "grade": "string",
+  "feedback": "string",
+  "graded_by": "123e4567-e89b-12d3-a456-426614174000",
+  "graded_at": "2023-10-23T12:00:00Z",
+  "status": "draft"
+}
+```
+
+---
+
+# Timetable APIs
+
+## `GET /api/v1/timetable/`
+
+**Summary**: timetable_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `day_of_week` | `query` | `integer` | No | * `0` - Monday * `1` - Tuesday * `2` - Wednesday * `3` - Thursday * `4` - Friday * `5` - Saturday * `6` - Sunday |
+| `is_active` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `room` | `query` | `string (uuid)` | No |  |
+| `search` | `query` | `string` | No | A search term. |
+| `semester` | `query` | `string (uuid)` | No |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of TimetableEntry` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "course_name": "string",
+      "course_code": "string",
+      "faculty_name": "string",
+      "room": "123e4567-e89b-12d3-a456-426614174000",
+      "room_name": "string",
+      "day_of_week": {},
+      "day_name": "string",
+      "start_time": "string",
+      "end_time": "string",
+      "semester": "123e4567-e89b-12d3-a456-426614174000",
+      "is_active": true
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/timetable/`
+
+**Summary**: timetable_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `course_offering` | `string` | Yes |  |
+| `room` | `string` | Yes |  |
+| `day_of_week` | `string` | Yes |  |
+| `start_time` | `string` | Yes |  |
+| `end_time` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "day_of_week": {},
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `room` | `string` | Yes |  |
+| `room_name` | `string` | Yes |  (read-only) |
+| `day_of_week` | `string` | Yes |  |
+| `day_name` | `string` | Yes |  (read-only) |
+| `start_time` | `string` | Yes |  |
+| `end_time` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "faculty_name": "string",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "room_name": "string",
+  "day_of_week": {},
+  "day_name": "string",
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+---
+
+## `GET /api/v1/timetable/{id}/`
+
+**Summary**: timetable_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `room` | `string` | Yes |  |
+| `room_name` | `string` | Yes |  (read-only) |
+| `day_of_week` | `string` | Yes |  |
+| `day_name` | `string` | Yes |  (read-only) |
+| `start_time` | `string` | Yes |  |
+| `end_time` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "faculty_name": "string",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "room_name": "string",
+  "day_of_week": {},
+  "day_name": "string",
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+---
+
+## `PUT /api/v1/timetable/{id}/`
+
+**Summary**: timetable_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `course_offering` | `string` | Yes |  |
+| `room` | `string` | Yes |  |
+| `day_of_week` | `string` | Yes |  |
+| `start_time` | `string` | Yes |  |
+| `end_time` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "day_of_week": {},
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `room` | `string` | Yes |  |
+| `room_name` | `string` | Yes |  (read-only) |
+| `day_of_week` | `string` | Yes |  |
+| `day_name` | `string` | Yes |  (read-only) |
+| `start_time` | `string` | Yes |  |
+| `end_time` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "faculty_name": "string",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "room_name": "string",
+  "day_of_week": {},
+  "day_name": "string",
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+---
+
+## `PATCH /api/v1/timetable/{id}/`
+
+**Summary**: timetable_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `course_offering` | `string` | No |  |
+| `room` | `string` | No |  |
+| `day_of_week` | `string` | No |  |
+| `start_time` | `string` | No |  |
+| `end_time` | `string` | No |  |
+| `semester` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "day_of_week": {},
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `course_offering` | `string` | Yes |  |
+| `course_name` | `string` | Yes |  (read-only) |
+| `course_code` | `string` | Yes |  (read-only) |
+| `faculty_name` | `string` | Yes |  (read-only) |
+| `room` | `string` | Yes |  |
+| `room_name` | `string` | Yes |  (read-only) |
+| `day_of_week` | `string` | Yes |  |
+| `day_name` | `string` | Yes |  (read-only) |
+| `start_time` | `string` | Yes |  |
+| `end_time` | `string` | Yes |  |
+| `semester` | `string` | Yes |  |
+| `is_active` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+  "course_name": "string",
+  "course_code": "string",
+  "faculty_name": "string",
+  "room": "123e4567-e89b-12d3-a456-426614174000",
+  "room_name": "string",
+  "day_of_week": {},
+  "day_name": "string",
+  "start_time": "string",
+  "end_time": "string",
+  "semester": "123e4567-e89b-12d3-a456-426614174000",
+  "is_active": true
+}
+```
+
+---
+
+## `DELETE /api/v1/timetable/{id}/`
+
+**Summary**: timetable_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `GET /api/v1/timetable/conflicts/`
+
+**Summary**: GET /api/v1/timetable/conflicts/ — check room/faculty conflicts.
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `Array of object` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": [
+    {}
+  ]
+}
+```
+
+---
+
+## `GET /api/v1/timetable/me/`
+
+**Summary**: GET /api/v1/timetable/me/ — student or faculty timetable.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of TimetableEntry` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "course_offering": "123e4567-e89b-12d3-a456-426614174000",
+      "course_name": "string",
+      "course_code": "string",
+      "faculty_name": "string",
+      "room": "123e4567-e89b-12d3-a456-426614174000",
+      "room_name": "string",
+      "day_of_week": {},
+      "day_name": "string",
+      "start_time": "string",
+      "end_time": "string",
+      "semester": "123e4567-e89b-12d3-a456-426614174000",
+      "is_active": true
+    }
+  ]
+}
+```
+
+---
+
+## `GET /api/v1/timetable/rooms/`
+
+**Summary**: timetable_rooms_list
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `is_available` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `room_type` | `query` | `string` | No | * `classroom` - Classroom * `lab` - Laboratory * `auditorium` - Auditorium * `conference` - Conference Room |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of Room` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "string",
+      "building": "string",
+      "capacity": 0,
+      "room_type": "classroom",
+      "is_available": true
+    }
+  ]
+}
+```
+
+---
+
+## `POST /api/v1/timetable/rooms/`
+
+**Summary**: timetable_rooms_create
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | Yes |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | Yes |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+---
+
+## `GET /api/v1/timetable/rooms/{id}/`
+
+**Summary**: timetable_rooms_retrieve
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | Yes |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+---
+
+## `PUT /api/v1/timetable/rooms/{id}/`
+
+**Summary**: timetable_rooms_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | Yes |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | Yes |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+---
+
+## `PATCH /api/v1/timetable/rooms/{id}/`
+
+**Summary**: timetable_rooms_partial_update
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | No |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | No |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Request**:
+```json
+{
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `name` | `string` | Yes |  |
+| `building` | `string` | No |  |
+| `capacity` | `integer` | Yes |  |
+| `room_type` | `RoomTypeEnum` | No |  |
+| `is_available` | `boolean` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "string",
+  "building": "string",
+  "capacity": 0,
+  "room_type": "classroom",
+  "is_available": true
+}
+```
+
+---
+
+## `DELETE /api/v1/timetable/rooms/{id}/`
+
+**Summary**: timetable_rooms_destroy
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+# Users APIs
+
+## `GET /api/v1/users/`
+
+**Summary**: GET /api/v1/users/ — List users (admin).
 POST /api/v1/users/ — Create user (admin).
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| department | query | No | string |  |
-| is_active | query | No | boolean |  |
-| ordering | query | No | string | Which field to use when ordering the results. |
-| page | query | No | integer | A page number within the paginated result set. |
-| role | query | No | string | * `admin` - Admin * `faculty` - Faculty * `student` - Student |
-| search | query | No | string | A search term. |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `department` | `query` | `string (uuid)` | No |  |
+| `is_active` | `query` | `boolean` | No |  |
+| `ordering` | `query` | `string` | No | Which field to use when ordering the results. |
+| `page` | `query` | `integer` | No | A page number within the paginated result set. |
+| `role` | `query` | `string` | No | * `admin` - Admin * `faculty` - Faculty * `student` - Student |
+| `search` | `query` | `string` | No | A search term. |
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `count` | `integer` | Yes |  |
+| `next` | `string` | No |  |
+| `previous` | `string` | No |  |
+| `results` | `Array of UserList` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "count": 0,
+  "next": "https://example.com/resource",
+  "previous": "https://example.com/resource",
+  "results": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "email": "user@example.com",
+      "first_name": "string",
+      "last_name": "string",
+      "role": "admin",
+      "department": "123e4567-e89b-12d3-a456-426614174000",
+      "department_name": "string",
+      "phone": "string",
+      "is_active": true,
+      "last_login": "2023-10-23T12:00:00Z",
+      "created_at": "2023-10-23T12:00:00Z",
+      "student_profile": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "student_id_number": "string",
+        "register_no": "string",
+        "program": "123e4567-e89b-12d3-a456-426614174000",
+        "current_semester": 0,
+        "admission_date": "2023-10-23",
+        "batch_year": 0,
+        "batch": "string",
+        "division": "string"
+      },
+      "faculty_profile": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "employee_id": "string",
+        "designation": "string",
+        "specialization": "string",
+        "joining_date": "2023-10-23",
+        "consultation_hours": null
+      }
+    }
+  ]
+}
+```
 
 ---
 
-### users_create
-**POST** `/api/v1/users/`
+## `POST /api/v1/users/`
 
-GET /api/v1/users/ — List users (admin).
+**Summary**: GET /api/v1/users/ — List users (admin).
 POST /api/v1/users/ — Create user (admin).
 
-**Responses:**
-- **201**: 
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes |  |
+| `password` | `string` | Yes |  (write-only) |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "phone": "string",
+  "student_profile": {
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+#### Response: 201 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "phone": "string",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
 
 ---
 
-### users_retrieve
-**GET** `/api/v1/users/{id}/`
+## `GET /api/v1/users/{id}/`
 
-GET/PATCH/DELETE /api/v1/users/{id}/
+**Summary**: GET/PATCH/DELETE /api/v1/users/{id}/
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
+#### Parameters
 
-**Responses:**
-- **200**: 
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
 
----
+#### Response: 200 
 
-### users_update
-**PUT** `/api/v1/users/{id}/`
+#### Response Payload
 
-GET/PATCH/DELETE /api/v1/users/{id}/
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `last_login` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
 
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### users_partial_update
-**PATCH** `/api/v1/users/{id}/`
-
-GET/PATCH/DELETE /api/v1/users/{id}/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### users_destroy
-**DELETE** `/api/v1/users/{id}/`
-
-GET/PATCH/DELETE /api/v1/users/{id}/
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **204**: No response body
-
----
-
-### users_reset_password_create
-**POST** `/api/v1/users/{id}/reset-password/`
-
-POST /api/v1/users/{id}/reset-password/ — Admin resets a user's password.
-
-**Parameters:**
-| Name | In | Required | Type | Description |
-|------|----|----------|------|-------------|
-| id | path | Yes | string |  |
-
-**Responses:**
-- **200**: 
-
----
-
-### users_me_retrieve
-**GET** `/api/v1/users/me/`
-
-GET/PATCH /api/v1/users/me/ — Current user profile.
-
-**Responses:**
-- **200**: 
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "profile_picture": "https://example.com/resource",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "last_login": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
 
 ---
 
-### users_me_update
-**PUT** `/api/v1/users/me/`
+## `PUT /api/v1/users/{id}/`
 
-GET/PATCH /api/v1/users/me/ — Current user profile.
+**Summary**: GET/PATCH/DELETE /api/v1/users/{id}/
 
-**Responses:**
-- **200**: 
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "profile_picture": "string",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "student_profile": {
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `last_login` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "profile_picture": "https://example.com/resource",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "last_login": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
 
 ---
 
-### users_me_partial_update
-**PATCH** `/api/v1/users/me/`
+## `PATCH /api/v1/users/{id}/`
 
-GET/PATCH /api/v1/users/me/ — Current user profile.
+**Summary**: GET/PATCH/DELETE /api/v1/users/{id}/
 
-**Responses:**
-- **200**: 
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | No |  |
+| `first_name` | `string` | No |  |
+| `last_name` | `string` | No |  |
+| `role` | `RoleEnum` | No |  |
+| `department` | `string` | No |  |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "profile_picture": "string",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "student_profile": {
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `last_login` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "profile_picture": "https://example.com/resource",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "last_login": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
 
 ---
 
-### users_me_avatar_create
-**POST** `/api/v1/users/me/avatar/`
+## `DELETE /api/v1/users/{id}/`
 
-POST /api/v1/users/me/avatar/
+**Summary**: GET/PATCH/DELETE /api/v1/users/{id}/
 
-**Responses:**
-- **200**: 
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Response: 204 No response body
+
+---
+
+## `POST /api/v1/users/{id}/reset-password/`
+
+**Summary**: POST /api/v1/users/{id}/reset-password/ — Admin resets a user's password.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `id` | `path` | `string (uuid)` | Yes |  |
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `new_password` | `string` | Yes |  |
+
+**Example Request**:
+```json
+{
+  "new_password": "string"
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `message` | `string` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "message": "string"
+}
+```
+
+---
+
+## `GET /api/v1/users/me/`
+
+**Summary**: GET/PATCH /api/v1/users/me/ — Current user profile.
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `last_login` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "profile_picture": "https://example.com/resource",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "last_login": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+---
+
+## `PUT /api/v1/users/me/`
+
+**Summary**: GET/PATCH /api/v1/users/me/ — Current user profile.
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "profile_picture": "string",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "student_profile": {
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `last_login` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "profile_picture": "https://example.com/resource",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "last_login": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+---
+
+## `PATCH /api/v1/users/me/`
+
+**Summary**: GET/PATCH /api/v1/users/me/ — Current user profile.
+
+#### Request Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | No |  |
+| `first_name` | `string` | No |  |
+| `last_name` | `string` | No |  |
+| `role` | `RoleEnum` | No |  |
+| `department` | `string` | No |  |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Request**:
+```json
+{
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "profile_picture": "string",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "student_profile": {
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes |  (read-only) |
+| `email` | `string` | Yes |  |
+| `first_name` | `string` | Yes |  |
+| `last_name` | `string` | Yes |  |
+| `role` | `RoleEnum` | Yes |  |
+| `department` | `string` | No |  |
+| `department_name` | `string` | Yes |  (read-only) |
+| `profile_picture` | `string` | No |  |
+| `phone` | `string` | No |  |
+| `is_active` | `boolean` | No |  |
+| `failed_login_attempts` | `integer` | No |  |
+| `last_login` | `string` | Yes |  (read-only) |
+| `created_at` | `string` | Yes |  (read-only) |
+| `updated_at` | `string` | Yes |  (read-only) |
+| `student_profile` | `string` | No |  |
+| `faculty_profile` | `string` | No |  |
+
+**Example Response**:
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "first_name": "string",
+  "last_name": "string",
+  "role": "admin",
+  "department": "123e4567-e89b-12d3-a456-426614174000",
+  "department_name": "string",
+  "profile_picture": "https://example.com/resource",
+  "phone": "string",
+  "is_active": true,
+  "failed_login_attempts": 0,
+  "last_login": "2023-10-23T12:00:00Z",
+  "created_at": "2023-10-23T12:00:00Z",
+  "updated_at": "2023-10-23T12:00:00Z",
+  "student_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "student_id_number": "string",
+    "register_no": "string",
+    "program": "123e4567-e89b-12d3-a456-426614174000",
+    "current_semester": 0,
+    "admission_date": "2023-10-23",
+    "batch_year": 0,
+    "batch": "string",
+    "division": "string"
+  },
+  "faculty_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "employee_id": "string",
+    "designation": "string",
+    "specialization": "string",
+    "joining_date": "2023-10-23",
+    "consultation_hours": null
+  }
+}
+```
+
+---
+
+## `POST /api/v1/users/me/avatar/`
+
+**Summary**: POST /api/v1/users/me/avatar/
+
+#### Response: 200 
+
+#### Response Payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | `string` | Yes |  |
+| `data` | `object` | Yes |  |
+
+**Example Response**:
+```json
+{
+  "status": "string",
+  "data": {}
+}
+```
 
 ---
 

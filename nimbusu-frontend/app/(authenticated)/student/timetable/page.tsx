@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { timetableService } from "@/services/api";
+import { useTimetableSocket } from "@/hooks/useTimetableSocket";
 import type { TimetableEntry } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -66,17 +67,20 @@ export default function StudentTimetablePage() {
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
 
-    useEffect(() => {
-        async function fetch() {
-            try {
-                const { data } = await timetableService.mine();
-                // @ts-ignore - Handle both array and paginated responses
-                setEntries(Array.isArray(data) ? data : (data.results ?? []));
-            } catch { toast.error("Failed to load timetable"); }
-            finally { setLoading(false); }
-        }
-        fetch();
+    const fetchTimetable = useCallback(async () => {
+        try {
+            const { data } = await timetableService.mine();
+            // @ts-ignore - Handle both array and paginated responses
+            setEntries(Array.isArray(data) ? data : (data.results ?? []));
+        } catch { toast.error("Failed to load timetable"); }
+        finally { setLoading(false); }
     }, []);
+
+    useEffect(() => {
+        fetchTimetable();
+    }, [fetchTimetable]);
+
+    useTimetableSocket(fetchTimetable);
 
     const filteredEntries = useMemo(() => {
         if (!searchQuery) return entries;

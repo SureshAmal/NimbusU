@@ -335,6 +335,7 @@ export default function AdminAcademicsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch {
       toast.error("Failed to export enrollments");
     }

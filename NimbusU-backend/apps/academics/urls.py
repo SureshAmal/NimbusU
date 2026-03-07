@@ -31,6 +31,7 @@ urlpatterns = [
     path("enrollments/", views.EnrollmentCreateView.as_view(), name="enrollment-create"),
     path("enrollments/bulk-create/", views.EnrollmentBulkCreateView.as_view(), name="enrollment-bulk-create"),
     path("enrollments/me/", views.MyEnrollmentsView.as_view(), name="my-enrollments"),
+    path("enrollments/export/", views.ExportEnrollmentsView.as_view(), name="enrollments-export"),
     path("enrollments/<uuid:pk>/", views.EnrollmentDeleteView.as_view(), name="enrollment-delete"),
     # Academic Calendar
     path("academics/calendar/", views.AcademicEventListCreateView.as_view(), name="calendar-list-create"),
@@ -44,4 +45,7 @@ urlpatterns = [
     path("academics/grades/me/", views.MyGradesView.as_view(), name="my-grades"),
     path("academics/grades/gpa/", views.GPAView.as_view(), name="gpa"),
     path("academics/grades/<uuid:pk>/", views.GradeDetailView.as_view(), name="grade-detail"),
+    # Student Tasks
+    path("academics/tasks/", views.StudentTaskViewSet.as_view(), name="task-list-create"),
+    path("academics/tasks/<uuid:pk>/", views.StudentTaskDetailView.as_view(), name="task-detail"),
 ]

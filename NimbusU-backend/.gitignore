@@ -9,6 +9,7 @@ build/
 # Env
 .env
 .venv/
+.pytest_cache
 
 # Django
 db.sqlite3

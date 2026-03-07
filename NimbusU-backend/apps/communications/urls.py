@@ -19,6 +19,7 @@ urlpatterns = [
     path("communications/forums/<uuid:pk>/posts/", views.ForumPostCreateView.as_view(), name="forum-post-create"),
     path("communications/forums/<uuid:forum_id>/posts/<uuid:pk>/", views.ForumPostEditView.as_view(), name="forum-post-edit"),
     path("communications/forums/<uuid:forum_id>/posts/<uuid:pk>/delete/", views.ForumPostDeleteView.as_view(), name="forum-post-delete"),
+    path("communications/posts/<uuid:pk>/replies/", views.ForumPostRepliesView.as_view(), name="forum-post-replies"),
     # Notifications
     path("notifications/", views.NotificationListView.as_view(), name="notification-list"),
     path("notifications/unread-count/", views.UnreadCountView.as_view(), name="unread-count"),

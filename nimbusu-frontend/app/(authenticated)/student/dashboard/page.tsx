@@ -3,12 +3,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
-import { assignmentsService, attendanceService } from "@/services/api";
+import { assignmentsService, attendanceService, enrollmentsService } from "@/services/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calendar, ClipboardList, Clock, TrendingUp, TrendingDown, BarChart3, Target, PartyPopper } from "lucide-react";
 import type { TimetableEntry, Enrollment, Assignment } from "@/lib/types";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, PieChart, Pie, Cell } from "recharts";
+import StudentTaskWidget from "./StudentTaskWidget";
 
 const COLORS = {
     primary: "hsl(var(--primary))",
@@ -65,7 +66,7 @@ export default function StudentDashboardPage() {
             try {
                 const [ttRes, enrRes, assRes] = await Promise.all([
                     api.get("/timetable/me/"),
-                    api.get("/academics/enrollments/me/"),
+                    enrollmentsService.mine(),
                     api.get("/assignments/?ordering=-due_date"),
                 ]);
                 const tt = ttRes.data.results ?? ttRes.data ?? [];
@@ -312,6 +313,11 @@ export default function StudentDashboardPage() {
                             </div>
                         </>
                     )}
+                </div>
+
+                {/* My Tasks widget */}
+                <div className="md:col-span-2">
+                    <StudentTaskWidget />
                 </div>
             </div>
         </div>

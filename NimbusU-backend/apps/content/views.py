@@ -283,6 +283,9 @@ class GlobalSearchView(APIView):
                 "courses": serializers.ListField(child=serializers.DictField()),
                 "content": serializers.ListField(child=serializers.DictField()),
                 "users": serializers.ListField(child=serializers.DictField()),
+                "assignments": serializers.ListField(child=serializers.DictField()),
+                "announcements": serializers.ListField(child=serializers.DictField()),
+                "forums": serializers.ListField(child=serializers.DictField()),
             }),
         })},
         tags=["Search"],
@@ -290,7 +293,7 @@ class GlobalSearchView(APIView):
     def get(self, request):
         q = request.query_params.get("q", "").strip()
         if not q:
-            return Response({"status": "success", "data": {"courses": [], "content": [], "users": []}})
+            return Response({"status": "success", "data": {"courses": [], "content": [], "users": [], "assignments": [], "announcements": [], "forums": []}})
 
         user = request.user
         role = user.role
@@ -364,11 +367,91 @@ class GlobalSearchView(APIView):
             } for u in user_qs
         ]
 
+        # 4. Assignments
+        from apps.assignments.models import Assignment
+        assignment_qs = Assignment.objects.all()
+        if role == "student":
+            assignment_qs = assignment_qs.filter(
+                course_offering__enrollments__student=user
+            )
+        elif role != "admin":
+            assignment_qs = assignment_qs.filter(
+                course_offering__faculty=user
+            )
+        assignment_qs = assignment_qs.filter(
+            Q(title__icontains=q) | Q(description__icontains=q)
+        ).distinct()[:5]
+
+        assignments_data = [
+            {
+                "id": str(a.id),
+                "title": a.title,
+                "subtitle": f"Assignment ({a.due_date.strftime('%b %d, %Y') if a.due_date else 'No due date'})",
+                "type": "assignment",
+                "link": f"/{role}/courses/{a.course_offering_id}" if a.course_offering_id else "#"
+            } for a in assignment_qs
+        ]
+
+        # 5. Announcements
+        from apps.communications.models import Announcement
+        announcement_qs = Announcement.objects.all()
+        if role == "student":
+            announcement_qs = announcement_qs.filter(
+                Q(course_offering__isnull=True) |
+                Q(course_offering__enrollments__student=user)
+            )
+        elif role != "admin":
+            announcement_qs = announcement_qs.filter(
+                Q(course_offering__isnull=True) |
+                Q(course_offering__faculty=user)
+            )
+        announcement_qs = announcement_qs.filter(
+            Q(title__icontains=q) | Q(content__icontains=q)
+        ).distinct()[:5]
+        
+        announcements_data = [
+            {
+                "id": str(a.id),
+                "title": a.title,
+                "subtitle": "Global Announcement" if not a.course_offering else "Course Announcement",
+                "type": "announcement",
+                "link": f"/{role}/announcements" if not a.course_offering else f"/{role}/courses/{a.course_offering_id}"
+            } for a in announcement_qs
+        ]
+
+        # 6. Forums
+        from apps.communications.models import DiscussionForum
+        forum_qs = DiscussionForum.objects.all()
+        if role == "student":
+            forum_qs = forum_qs.filter(
+                course_offering__enrollments__student=user
+            )
+        elif role != "admin":
+            forum_qs = forum_qs.filter(
+                course_offering__faculty=user
+            )
+        forum_qs = forum_qs.filter(
+            Q(title__icontains=q) | Q(description__icontains=q)
+        ).distinct()[:5]
+        
+        forums_data = [
+            {
+                "id": str(f.id),
+                "title": f.title,
+                "subtitle": "Discussion Forum",
+                "type": "forum",
+                "link": f"/{role}/courses/{f.course_offering_id}" if f.course_offering_id else "#"
+            } for f in forum_qs
+        ]
+
         return Response({
             "status": "success",
             "data": {
                 "courses": courses_data,
                 "content": content_data,
                 "users": users_data,
+                "assignments": assignments_data,
+                "announcements": announcements_data,
+                "forums": forums_data,
             }
         })

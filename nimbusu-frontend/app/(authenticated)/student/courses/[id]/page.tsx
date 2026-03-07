@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
-import { assignmentsService, contentService, attendanceService } from "@/services/api";
+import { assignmentsService, contentService, attendanceService, forumsService } from "@/services/api";
 import { usePageHeader } from "@/lib/page-header";
-import type { CourseOffering, Assignment, Content, Submission } from "@/lib/types";
+import type { CourseOffering, Assignment, Content, Submission, DiscussionForum, DiscussionPost } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ClipboardList, FileText, ScrollText, Download, Upload, Loader2, CheckCircle2, Eye, File, Video, Link2, Image, X, ExternalLink } from "lucide-react";
+import { ClipboardList, FileText, ScrollText, Download, Upload, Loader2, CheckCircle2, Eye, File, Video, Link2, Image, X, ExternalLink, MessageSquare } from "lucide-react";
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     document: <FileText className="h-4 w-4 text-blue-500" />,
@@ -47,6 +47,7 @@ export default function StudentCourseDetailPage() {
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [content, setContent] = useState<Content[]>([]);
     const [attendance, setAttendance] = useState<unknown[]>([]);
+    const [forums, setForums] = useState<DiscussionForum[]>([]);
     const [loading, setLoading] = useState(true);
     const { setHeader } = usePageHeader();
 
@@ -67,19 +68,27 @@ export default function StudentCourseDetailPage() {
     const [textPreview, setTextPreview] = useState<string | null>(null);
     const [loadingPreview, setLoadingPreview] = useState(false);
 
+    /* Forums */
+    const [selectedForum, setSelectedForum] = useState<DiscussionForum & { posts: DiscussionPost[] } | null>(null);
+    const [forumPosts, setForumPosts] = useState<DiscussionPost[]>([]);
+    const [newPostText, setNewPostText] = useState("");
+    const [posting, setPosting] = useState(false);
+
     useEffect(() => {
         async function fetch() {
             try {
-                const [offRes, assRes, contRes, attRes] = await Promise.all([
+                const [offRes, assRes, contRes, attRes, forRes] = await Promise.all([
                     api.get(`/academics/offerings/${id}/`),
                     assignmentsService.list({ course_offering: id }),
                     contentService.list({ course_offering: id }),
                     attendanceService.myCourse(id).catch(() => ({ data: { results: [] } })),
+                    forumsService.list({ course_offering: id }).catch(() => ({ data: { results: [] } })),
                 ]);
                 setOffering(offRes.data);
                 setAssignments(assRes.data.results ?? []);
                 setContent(contRes.data.results ?? []);
                 setAttendance(attRes.data.results ?? []);
+                setForums(forRes.data.results ?? []);
             } catch { toast.error("Failed to load course data"); }
             finally { setLoading(false); }
         }
@@ -166,6 +175,27 @@ export default function StudentCourseDetailPage() {
 
     function closePreview() { setPreviewContent(null); setPreviewUrl(null); setTextPreview(null); }
 
+    async function handleSelectForum(f: DiscussionForum) {
+        try {
+            const { data } = await forumsService.get(f.id);
+            setSelectedForum(data);
+            setForumPosts(data.posts || []);
+        } catch { toast.error("Failed to load forum details"); }
+    }
+
+    async function handlePostReply(e: React.FormEvent) {
+        e.preventDefault();
+        if (!selectedForum || !newPostText.trim()) return;
+        setPosting(true);
+        try {
+            const { data } = await forumsService.createPost(selectedForum.id, { body: newPostText });
+            setForumPosts([...forumPosts, data]);
+            setNewPostText("");
+            toast.success("Posted successfully");
+        } catch { toast.error("Failed to post message"); }
+        finally { setPosting(false); }
+    }
+
     if (loading) return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-[500px]" style={{ borderRadius: "var(--radius-lg)" }} /></div>;
 
     const present = (attendance as Array<{ status: string }>).filter((a) => a.status === "present" || a.status === "late").length;
@@ -179,6 +209,7 @@ export default function StudentCourseDetailPage() {
                     <TabsTrigger value="content"><FileText className="h-4 w-4 mr-1.5" /> Content</TabsTrigger>
                     <TabsTrigger value="assignments"><ClipboardList className="h-4 w-4 mr-1.5" /> Assignments</TabsTrigger>
                     <TabsTrigger value="attendance"><ScrollText className="h-4 w-4 mr-1.5" /> Attendance</TabsTrigger>
+                    <TabsTrigger value="forum"><MessageSquare className="h-4 w-4 mr-1.5" /> Forum</TabsTrigger>
                 </TabsList>
 
                 {/* Content tab — file-manager style grid */}
@@ -269,6 +300,63 @@ export default function StudentCourseDetailPage() {
                     {total > 0 && (
                         <div className="w-full h-2 rounded-full bg-muted overflow-hidden mt-2" style={{ borderRadius: "var(--radius)" }}>
                             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 75 ? "var(--primary)" : "var(--destructive)", borderRadius: "var(--radius)" }} />
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* Forum tab */}
+                <TabsContent value="forum" className="mt-4">
+                    {!selectedForum ? (
+                        forums.length === 0 ? (
+                            <div className="py-16 text-center text-muted-foreground"><MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />No discussion forums available.</div>
+                        ) : (
+                            <div className="space-y-2">
+                                {forums.map(f => (
+                                    <div key={f.id} onClick={() => handleSelectForum(f)} className="p-4 border rounded-lg hover:bg-accent/30 cursor-pointer transition-colors" style={{ borderRadius: "var(--radius)" }}>
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-medium">{f.title}</h3>
+                                            <Badge variant={f.is_active ? "default" : "secondary"}>{f.is_active ? "Active" : "Closed"}</Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground mt-1">Created by {f.created_by_name} · {new Date(f.created_at).toLocaleDateString()}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Button variant="ghost" size="sm" onClick={() => setSelectedForum(null)}>← Back to Forums</Button>
+                                <h3 className="font-semibold text-lg">{selectedForum.title}</h3>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                {forumPosts.length === 0 ? (
+                                    <div className="py-8 text-center text-muted-foreground text-sm">No posts yet. Be the first to start the discussion!</div>
+                                ) : (
+                                    forumPosts.map(post => (
+                                        <div key={post.id} className="p-4 border rounded-lg bg-background" style={{ borderRadius: "var(--radius)" }}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="font-medium text-sm">{post.author_name}</span>
+                                                <span className="text-xs text-muted-foreground">{new Date(post.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <p className="text-sm rounded-md whitespace-pre-wrap">{post.body}</p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {selectedForum.is_active && (
+                                <form onSubmit={handlePostReply} className="mt-6 space-y-3 p-4 bg-muted/30 border rounded-lg" style={{ borderRadius: "var(--radius-lg)" }}>
+                                    <Label>Post a new message</Label>
+                                    <Textarea value={newPostText} onChange={e => setNewPostText(e.target.value)} placeholder="Type your message here..." rows={3} />
+                                    <div className="flex justify-end">
+                                        <Button type="submit" disabled={posting || !newPostText.trim()}>
+                                            {posting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+                                            Post Message
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     )}
                 </TabsContent>

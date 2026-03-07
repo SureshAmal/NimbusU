@@ -324,3 +324,35 @@ class Grade(models.Model):
 
     def __str__(self):
         return f"{self.student} → {self.course_offering} = {self.grade_letter}"
+
+
+class StudentTask(models.Model):
+    """Personal task tracking for a student, optionally tied to a course."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tasks",
+    )
+    course_offering = models.ForeignKey(
+        CourseOffering,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="student_tasks",
+        help_text="Optional course offering this task is related to.",
+    )
+    title = models.CharField(max_length=300)
+    description = models.TextField(blank=True, default="")
+    due_date = models.DateTimeField(null=True, blank=True)
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "student_tasks"
+        ordering = ["is_completed", "due_date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.title} (Student: {self.student})"

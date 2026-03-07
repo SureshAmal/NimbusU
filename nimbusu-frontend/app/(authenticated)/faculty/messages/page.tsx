@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { messagesService, usersService } from "@/services/api";
 import type { Message, User } from "@/lib/types";
+import { useChatSocket } from "@/hooks/useChatSocket";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,13 @@ export default function FacultyMessagesPage() {
     }
 
     useEffect(() => { fetchMessages(); }, []);
+    
+    useChatSocket((newMessage) => {
+      setMessages((prev) => {
+        if (prev.find(m => m.id === newMessage.id)) return prev;
+        return [newMessage, ...prev];
+      });
+    });
 
     useEffect(() => {
         if (!composeOpen) return;

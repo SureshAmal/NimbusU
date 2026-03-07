@@ -15,7 +15,7 @@ from apps.accounts.serializers import UserListSerializer
 
 from .models import (
     AcademicEvent, Course, CourseOffering, CoursePrerequisite,
-    Department, Enrollment, Grade, Program, School, Semester,
+    Department, Enrollment, Grade, Program, School, Semester, StudentTask
 )
 from .serializers import (
     CourseOfferingSerializer,
@@ -29,6 +29,7 @@ from .serializers import (
     SchoolSerializer,
     SemesterSerializer,
     AcademicEventSerializer,
+    StudentTaskSerializer,
 )
 
 User = get_user_model()
@@ -320,7 +321,7 @@ class EnrollmentDeleteView(generics.DestroyAPIView):
 
 
 class MyEnrollmentsView(generics.ListAPIView):
-    """GET /api/v1/academics/enrollments/me/"""
+    """GET /api/v1/enrollments/me/"""
 
     serializer_class = EnrollmentSerializer
 
@@ -330,6 +331,64 @@ class MyEnrollmentsView(generics.ListAPIView):
         return Enrollment.objects.filter(
             student=self.request.user
         ).select_related("course_offering__course")
+
+
+class ExportEnrollmentsView(APIView):
+    """GET /api/v1/enrollments/export/ — Export enrollments as CSV."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        responses={200: serializers.CharField(help_text="CSV file content")},
+        tags=["Academics"],
+    )
+    def get(self, request):
+        if request.user.role == "student":
+            enrollments = Enrollment.objects.filter(student=request.user)
+        elif request.user.role in ("faculty", "dean", "head", "admin"):
+            enrollments = Enrollment.objects.all()
+        else:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        enrollments = enrollments.select_related(
+            "student",
+            "course_offering__course",
+            "course_offering__semester",
+            "course_offering__faculty",
+        )
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="enrollments_export.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            "Enrollment ID",
+            "Student",
+            "Student ID",
+            "Course Code",
+            "Course Name",
+            "Semester",
+            "Section",
+            "Faculty",
+            "Status",
+            "Enrolled At",
+        ])
+
+        for enrollment in enrollments:
+            writer.writerow([
+                str(enrollment.id),
+                enrollment.student.full_name,
+                str(enrollment.student_id),
+                enrollment.course_offering.course.code,
+                enrollment.course_offering.course.name,
+                enrollment.course_offering.semester.name,
+                enrollment.course_offering.section,
+                enrollment.course_offering.faculty.full_name,
+                enrollment.status,
+                enrollment.enrolled_at.isoformat(),
+            ])
+
+        return response
 
 
 # ─── Academic Calendar ──────────────────────────────────────────────────
@@ -581,3 +640,24 @@ class ExportGradesView(APIView):
             ])
 
         return response
+
+
+# ─── Student Tasks ────────────────────────────────────────────────────────
+class StudentTaskViewSet(generics.ListCreateAPIView):
+    """GET /api/v1/academics/tasks/ and POST /api/v1/academics/tasks/"""
+    serializer_class = StudentTaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return StudentTask.objects.filter(student=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(student=self.request.user)
+
+class StudentTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """GET, PATCH, DELETE /api/v1/academics/tasks/<id>/"""
+    serializer_class = StudentTaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return StudentTask.objects.filter(student=self.request.user)

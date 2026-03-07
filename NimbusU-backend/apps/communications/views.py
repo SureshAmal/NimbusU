@@ -76,8 +76,19 @@ class MessageListCreateView(generics.ListCreateAPIView):
         ).select_related("sender", "receiver")
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
-
+        message = serializer.save(sender=self.request.user)
+        # Broadcast the new message via WebSocket to the receiver
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{message.receiver.id}",
+            {
+                "type": "chat_message",
+                "message": MessageSerializer(message).data
+            }
+        )
 
 class MessageDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = MessageSerializer
@@ -183,6 +194,20 @@ class ForumPostDeleteView(generics.DestroyAPIView):
         if user.role == "admin":
             return DiscussionPost.objects.all()
         return DiscussionPost.objects.filter(author=user)
+
+
+class ForumPostRepliesView(generics.ListAPIView):
+    """GET /api/v1/communications/posts/{id}/replies/"""
+
+    serializer_class = DiscussionPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return DiscussionPost.objects.none()
+        return DiscussionPost.objects.filter(
+            parent_id=self.kwargs["pk"]
+        ).select_related("author", "forum").order_by("created_at")
 
 
 # ─── Notifications ──────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { usePageHeader } from "@/lib/page-header";
 import { GlobalSearch } from "./global-search";
+import { useNotificationSocket } from "@/hooks/useNotificationSocket";
 
 /** Derive a human-readable title from a URL path, e.g. "/admin/audit-logs" → "Audit Logs" */
 function titleFromPath(pathname: string): string {
@@ -68,6 +69,11 @@ export function AppHeader() {
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Live WebSocket notifications — increment badge + show toast
+  useNotificationSocket(() => {
+    setUnreadCount((prev) => prev + 1);
+  });
 
   // Use explicit header if set, otherwise derive from path
   const displayTitle = header?.title ?? titleFromPath(pathname);
@@ -184,6 +190,11 @@ export function AppHeader() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href={user?.role === "student" ? "/student/profile" : "/settings"}>
+              Profile
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings">Settings</Link>
           </DropdownMenuItem>

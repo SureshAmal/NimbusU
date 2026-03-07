@@ -8,7 +8,7 @@ User = get_user_model()
 
 from .models import (
     AcademicEvent, Course, CourseOffering, CoursePrerequisite,
-    Department, Enrollment, Grade, Program, School, Semester,
+    Department, Enrollment, Grade, Program, School, Semester, StudentTask
 )
 
 
@@ -174,4 +174,17 @@ class GradeSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class StudentTaskSerializer(serializers.ModelSerializer):
+    course_name = serializers.CharField(source="course_offering.course.name", read_only=True, default=None)
+    
+    class Meta:
+        model = StudentTask
+        fields = [
+            "id", "student", "course_offering", "course_name",
+            "title", "description", "due_date", "is_completed",
+            "created_at", "updated_at"
+        ]
+        read_only_fields = ["id", "student", "created_at", "updated_at"]
 

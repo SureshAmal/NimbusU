@@ -212,6 +212,19 @@ export interface Submission {
     status: "submitted" | "graded" | "returned";
 }
 
+export interface StudentTask {
+    id: string;
+    student: string;
+    course_offering?: string | null;
+    course_name?: string | null;
+    title: string;
+    description: string;
+    due_date: string | null;
+    is_completed: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Content {
     id: string;
     title: string;
@@ -504,4 +517,27 @@ export interface SubstituteFaculty {
     reason: string;
     status: "pending" | "approved" | "rejected";
     created_at: string;
+}
+
+export interface DiscussionForum {
+    id: string;
+    title: string;
+    course_offering: string;
+    created_by: string;
+    created_by_name: string;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface DiscussionPost {
+    id: string;
+    forum: string;
+    author: string;
+    author_name: string;
+    parent: string | null;
+    body: string;
+    is_resolved: boolean;
+    reply_count: number;
+    created_at: string;
+    updated_at: string;
 }
