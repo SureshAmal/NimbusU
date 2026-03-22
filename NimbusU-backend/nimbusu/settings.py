@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -53,6 +54,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.telemetry.middleware.TelemetryMiddleware",
 ]
+
+# ─── CSRF ───────────────────────────────────────────────────────────────
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000",
+    cast=Csv(),
+)
 
 ROOT_URLCONF = "nimbusu.urls"
 
@@ -185,11 +193,13 @@ STORAGES = {
             "file_overwrite": False,
             "default_acl": "public-read",
             "querystring_auth": False,
-            "url_protocol": "http:",
+            "url_protocol": "https:" if not DEBUG else "http:",
         },
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        if not DEBUG
+        else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
